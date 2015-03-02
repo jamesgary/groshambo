@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	TICK_LENGTH = time.Millisecond * 500
+	TICK_LENGTH = time.Millisecond * 100
 )
 
 // hub maintains the set of active connections
@@ -32,6 +32,16 @@ var h = hub{
 	connections:    make(map[*connection]bool),
 }
 
+//func NewHub(route, port) {
+//	http.HandleFunc(route, serveWs)
+//	go func() {
+//		err := http.ListenAndServe(*addr, nil)
+//		if err != nil {
+//			log.Fatal("ListenAndServe: ", err)
+//		}
+//	}
+//}
+
 func (h *hub) run() {
 	ticker := time.NewTicker(TICK_LENGTH)
 	go func() {
@@ -40,9 +50,9 @@ func (h *hub) run() {
 			worldJson, _ := json.Marshal(world)
 			for c := range h.connections {
 				select {
-				case c.send <- worldJson:
+				case c.sendChan <- worldJson:
 				default:
-					close(c.send)
+					close(c.sendChan)
 					delete(h.connections, c)
 				}
 			}
@@ -56,14 +66,14 @@ func (h *hub) run() {
 		case c := <-h.UnregisterChan:
 			if _, ok := h.connections[c]; ok {
 				delete(h.connections, c)
-				close(c.send)
+				close(c.sendChan)
 			}
 		case m := <-h.BroadcastChan:
 			for c := range h.connections {
 				select {
-				case c.send <- m:
+				case c.sendChan <- m:
 				default:
-					close(c.send)
+					close(c.sendChan)
 					delete(h.connections, c)
 				}
 			}

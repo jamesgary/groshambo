@@ -1,0 +1,17 @@
+{
+  "name": "husk",
+  "version": "1.0.0",
+  "description": "husky!",
+  "main": "husk.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babelify": "^5.0.3",
+    "gulp-browserify": "^0.5.1",
+    "gulp-sass": "^1.3.3",
+    "gulp-util": "^3.0.3"
+  }
+}

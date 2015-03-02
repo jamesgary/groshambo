@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/gorilla/websocket"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -27,13 +29,14 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-// connection is an middleman between the websocket connection and the hub.
+// connection is a middleman between the websocket connection and the hub.
 type connection struct {
 	// The websocket connection.
 	ws *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan []byte
+	sendChan chan []byte
+	player   *Player
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -48,12 +51,26 @@ func (c *connection) readPump() {
 		c.ws.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
+
+	var playerInput PlayerInput
 	for {
-		_, message, err := c.ws.ReadMessage()
+		_, playerInputBytes, err := c.ws.ReadMessage()
 		if err != nil {
+			log.Print(err)
 			break
 		}
-		h.BroadcastChan <- message
+		//h.BroadcastChan <- message
+
+		err = json.Unmarshal(playerInputBytes, &playerInput)
+		if err != nil {
+			log.Println("error parsing player input:", err)
+		}
+		c.player.SetDirection(
+			playerInput.GoingUp,
+			playerInput.GoingDown,
+			playerInput.GoingLeft,
+			playerInput.GoingRight,
+		)
 	}
 }
 
@@ -72,7 +89,7 @@ func (c *connection) writePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c.sendChan:
 			if !ok {
 				c.write(websocket.CloseMessage, []byte{})
 				return
@@ -99,7 +116,15 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	c := &connection{send: make(chan []byte, 256), ws: ws}
+	// make new player
+	player := NewPlayer("POOPY")
+	world.AddPlayer(player)
+
+	c := &connection{
+		sendChan: make(chan []byte, 256),
+		ws:       ws,
+		player:   player,
+	}
 	h.RegisterChan <- c
 	go c.writePump()
 	go c.readPump()
