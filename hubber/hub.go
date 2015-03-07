@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,7 +16,7 @@ type Hub struct {
 
 func NewHub(route string, port int) *Hub {
 	hub := &Hub{
-		ConnectionChan: make(chan *Connection, 256),
+		ConnectionChan: make(chan *Connection),
 	}
 
 	wsHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -23,9 +24,11 @@ func NewHub(route string, port int) *Hub {
 		requestCopy = *r
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println("Could not upgrade?!", err)
+			log.Printf("Could not upgrade?! %+v", err)
 			return
 		}
+		ws.SetReadLimit(maxMessageSize)
+		ws.SetReadDeadline(time.Now().Add(readWait))
 
 		conn := &Connection{
 			OutputChan:     make(chan []byte, 256),
@@ -37,19 +40,25 @@ func NewHub(route string, port int) *Hub {
 
 		hub.ConnectionChan <- conn
 
+		readWriteErrChan := make(chan error, 2)
 		go func() {
-			err := conn.writePump()
-			log.Println("Error in the writePump:", err)
+			err = conn.writePump()
+			if err != nil {
+				log.Printf(`writePump stopped. Error: "%+v"`, err)
+			}
+			readWriteErrChan <- err
 		}()
 
 		go func() {
 			err = conn.readPump()
-			log.Println("Error in the readPump:", err)
+			log.Printf(`readPump stopped. Error: "%+v"`, err)
+			readWriteErrChan <- err
 		}()
 
-		//hub.UnregisterChan <- conn
-
-		//conn.destroy()
+		// wait for some error to come from either pump
+		err = <-readWriteErrChan
+		conn.DisconnectChan <- err
+		conn.ws.Close()
 	}
 
 	http.HandleFunc(route, wsHandler)

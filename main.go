@@ -29,56 +29,48 @@ type MovementInput struct {
 func main() {
 	world := NewWorld()
 	hub := hubber.NewHub("/ws", 8080)
-	playerInputChan := make(chan PlayerInput)
-	outputChans := []chan []byte{}
-	tickerChan := time.NewTicker(TICK_LENGTH).C
+
+	// our own pools of channels
+	playerInputChan := make(chan PlayerInput)            // channel to receieve player input
+	playerOutputChans := make(map[*Player](chan []byte)) // map of players to their output channel
+	disconnectChan := make(chan *Player)                 // channel to receieve players' departures
+	tickerChan := time.NewTicker(TICK_LENGTH).C          // channel that ticks every so often
 
 	log.Println("Running on localhost:8080")
 
 	for {
 		select {
-		case connection := <-hub.ConnectionChan:
+		case conn := <-hub.ConnectionChan:
 			// got a new player!
-			//request := connection.Request
-			inputChan := connection.InputChan
-			outputChan := connection.OutputChan
-			disconnectChan := connection.DisconnectChan
-
+			//request := conn.Request
 			log.Printf("Register request!") //: %+v\n", request)
 			player := NewPlayer("POOPY")
 			world.AddPlayer(player)
 
-			// attach input chan to player
+			// listen to input/output/disconnect chans on player
 			go (func() {
 				for {
 					select {
-					case msg, ok := <-inputChan:
+					case msg, ok := <-conn.InputChan: // read player input
 						if ok {
 							playerInputChan <- PlayerInput{player, msg}
 						} else {
 							log.Println("Input channel was closed!")
-							return // inputChan has been closed
+							return
 						}
+					case err := <-conn.DisconnectChan: // listen for player disconnections
+						log.Printf("Player disconnected! Err: %+v\n", err)
+						close(conn.InputChan)
+						close(conn.OutputChan)
+						close(conn.DisconnectChan)
+						disconnectChan <- player // notify main loop
+						return
 					}
-				}
-			})()
-
-			// attach disconnect chan to player
-			go (func() {
-				select {
-				case err, ok := <-disconnectChan:
-					if ok {
-						log.Printf("Error from disconnect chan! %+v\n", err)
-					} else {
-						log.Println("Disconnect channel was closed!")
-					}
-					world.RemovePlayer(player)
-					return
 				}
 			})()
 
 			// add output chan to rest of output chans for broadcasting
-			outputChans = append(outputChans, outputChan)
+			playerOutputChans[player] = conn.OutputChan
 
 		case playerInput := <-playerInputChan:
 			// player said something!
@@ -98,21 +90,21 @@ func main() {
 				)
 			}
 
+		case player := <-disconnectChan: // listen for player disconnects
+			world.RemovePlayer(player)
+			delete(playerOutputChans, player) // stop notifying departed player
+
 		case <-tickerChan:
 			// tick the world
 			world.Tick()
 
 			// send all players the updated world
 			worldJson, _ := json.Marshal(world)
-			for i, outputChan := range outputChans {
-				select {
-				case outputChan <- worldJson: // aw yiss
-				default:
-					// fancy delete
-					log.Println("Can't output!")
-					close(outputChan)
-					outputChans[i], outputChans[len(outputChans)-1], outputChans = outputChans[len(outputChans)-1], nil, outputChans[:len(outputChans)-1]
-				}
+			for _, outputChan := range playerOutputChans {
+				// _ represents player
+				// maybe do something differently for each player (like fog of war, or team stuff)?
+				// but for now, everyone gets same world information
+				outputChan <- worldJson
 			}
 		}
 	}
