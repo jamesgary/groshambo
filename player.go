@@ -8,13 +8,6 @@ const (
 	SPEED = 0.00000001
 )
 
-type PlayerInput struct {
-	GoingUp    bool `json:"goingUp"`
-	GoingDown  bool `json:"goingDown"`
-	GoingLeft  bool `json:"goingLeft"`
-	GoingRight bool `json:"goingRight"`
-}
-
 type Player struct {
 	X      float64 `json:"x"`
 	Y      float64 `json:"y"`

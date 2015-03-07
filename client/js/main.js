@@ -11,7 +11,7 @@ let player = {
 let conn, world, renderer;
 
 $(function() {
-  conn = new WebSocket("ws://" + HOST + "/ws");
+  window.conn = conn = new WebSocket("ws://" + HOST + "/ws");
   conn.onopen = function(evt) { console.log("Welcome!"); };
   conn.onclose = function(evt) { console.error("Connection lost!") };
   conn.onmessage = function(evt) {

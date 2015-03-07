@@ -16,7 +16,7 @@ var conn = undefined,
     renderer = undefined;
 
 $(function () {
-  conn = new WebSocket("ws://" + HOST + "/ws");
+  window.conn = conn = new WebSocket("ws://" + HOST + "/ws");
   conn.onopen = function (evt) {
     console.log("Welcome!");
   };
