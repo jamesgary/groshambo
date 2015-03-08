@@ -15,7 +15,32 @@ let player = {
 let conn, world, renderer;
 
 $(function() {
-  window.conn = conn = new WebSocket("ws://" + HOST + "/ws");
+  generateNamePicker();
+});
+
+function generateNamePicker() {
+  generateNameHtml(function(namesHtml) {
+    $("[role=name-list]").html(namesHtml);
+    $("[role=generate-more]").click(function() {
+      generateNamePicker();
+    });
+  });
+}
+
+function generateNameHtml(callback) {
+  $.ajax("//" + HOST + "/names").done(function(msg) {
+    let names = JSON.parse(msg);
+    let namesHtml = "";
+    for (let i = 0; i < names.length; i++) {
+      namesHtml += `<a data-name="${names[i][0]}" data-id="${names[i][1]}">${names[i][0]}</a>`;
+    }
+    namesHtml += `<a class="generate-more" role="generate-more">Generate more names</a>`;
+    callback(namesHtml);
+  });
+}
+
+function startGame() {
+  conn = new WebSocket("ws://" + HOST + "/ws?foo=bar");
   conn.onopen = function(evt) { console.log("Welcome!"); };
   conn.onclose = function(evt) { console.error("Connection lost!") };
   conn.onmessage = function(evt) {
@@ -42,7 +67,7 @@ $(function() {
   renderer.start();
 
   listenToPlayerInput();
-});
+}
 
 function updatePlayers(players) {
   world.updatedAt = Date.now();

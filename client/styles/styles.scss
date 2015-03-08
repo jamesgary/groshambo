@@ -1,5 +1,59 @@
+/* Background pattern from subtlepatterns.com */
+
+@mixin no-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 html, body {
-  background-color: #eeeeee;
+  @include no-select;
+  background: url('/images/congruent_pentagon.png');
+  font-family: 'Nunito', Arial, serif;
+  font-weight: 300;
+
+  h1 {
+    font-family: 'Nunito', Arial, serif;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .welcome {
+    background: #fff;
+    border-radius: 5px;
+    border: 2px rgba(20, 150, 20, 0.8) solid;
+    box-shadow: 0 0 5px 0px rgba(0,0,0,0.75);
+    margin: 0 auto;
+    padding: 10px;
+    text-align: center;
+    width: 400px;
+
+    a {
+      background: #dfd;
+      border-radius: 3px;
+      border: 1px #8b8 solid;
+      cursor: pointer;
+      display: inline-block;
+      margin: 5px;
+      padding: 5px;
+      width: 150px;
+
+      &.generate-more {
+        width: 200px;
+      }
+
+      &:hover {
+        background: #cec;
+      }
+
+      &:active {
+        background: #bdb;
+      }
+    }
+  }
 
   canvas {
     display: block;

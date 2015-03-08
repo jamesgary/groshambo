@@ -3,14 +3,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
-	//"github.com/jamesgary/game/namer"
 	"github.com/jamesgary/game/hubber"
+	"github.com/jamesgary/game/naming"
 )
 
 const (
+	PORT        = 8080
 	TICK_LENGTH = time.Millisecond * 30  // over 60 fps!
 	PING_LENGTH = time.Millisecond * 100 // 10 fps
 )
@@ -19,6 +22,8 @@ type PlayerInput struct {
 	player *Player
 	input  []byte
 }
+
+var namer naming.Namer
 
 type MovementInput struct {
 	GoingUp    bool `json:"going_up"`
@@ -30,7 +35,8 @@ type MovementInput struct {
 func main() {
 	world := NewWorld()
 	rulesJson, _ := json.Marshal(world.rules)
-	hub := hubber.NewHub("/ws", 8080)
+	hub := hubber.NewHub("/ws", PORT)
+	go setupNamer()
 
 	// our own pools of channels
 	playerInputChan := make(chan PlayerInput)            // channel to receieve player input
@@ -39,13 +45,17 @@ func main() {
 	tickerChan := time.NewTicker(TICK_LENGTH).C          // channel that ticks world physics
 	pingChan := time.NewTicker(PING_LENGTH).C            // channel that sends game state to players
 
-	log.Println("Running on localhost:8080")
+	log.Println("Running game on localhost:8080/ws")
 
 	for {
 		select {
 		case conn := <-hub.ConnectionChan:
 			// got a new player!
-			//request := conn.Request
+
+			// check their name
+			//url := conn.Request.URL
+			nameId := conn.Request.URL.Query().Get("name_id")
+			log.Printf("HERE: %v", nameId)
 			log.Printf("Register request!") //: %+v\n", request)
 			player := NewPlayer("POOPY")
 			world.AddPlayer(player)
@@ -114,4 +124,30 @@ func main() {
 			}
 		}
 	}
+}
+
+func setupNamer() {
+	var err error
+	namer, err = naming.NewNamer()
+	if err != nil {
+		log.Println("Error making namer", err)
+	}
+	http.HandleFunc("/names", nameHandler)
+	log.Println("Running namer on localhost:8080/names")
+	http.ListenAndServe(fmt.Sprintf(":%d", PORT), nil)
+}
+
+func nameHandler(w http.ResponseWriter, r *http.Request) {
+	// CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	var names [10][2]string // 10 name/ID pairs
+	i := 0
+	for i < 10 {
+		names[i][0], names[i][1] = namer.Generate()
+		i++
+	}
+	namesJson, _ := json.Marshal(names)
+
+	fmt.Fprint(w, string(namesJson))
 }
