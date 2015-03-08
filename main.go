@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	TICK_LENGTH = time.Millisecond * 100
+	TICK_LENGTH = time.Millisecond * 30  // over 60 fps!
+	PING_LENGTH = time.Millisecond * 100 // 10 fps
 )
 
 type PlayerInput struct {
@@ -20,21 +21,23 @@ type PlayerInput struct {
 }
 
 type MovementInput struct {
-	GoingUp    bool `json:"goingUp"`
-	GoingDown  bool `json:"goingDown"`
-	GoingLeft  bool `json:"goingLeft"`
-	GoingRight bool `json:"goingRight"`
+	GoingUp    bool `json:"going_up"`
+	GoingDown  bool `json:"going_down"`
+	GoingLeft  bool `json:"going_left"`
+	GoingRight bool `json:"going_right"`
 }
 
 func main() {
 	world := NewWorld()
+	rulesJson, _ := json.Marshal(world.rules)
 	hub := hubber.NewHub("/ws", 8080)
 
 	// our own pools of channels
 	playerInputChan := make(chan PlayerInput)            // channel to receieve player input
 	playerOutputChans := make(map[*Player](chan []byte)) // map of players to their output channel
 	disconnectChan := make(chan *Player)                 // channel to receieve players' departures
-	tickerChan := time.NewTicker(TICK_LENGTH).C          // channel that ticks every so often
+	tickerChan := time.NewTicker(TICK_LENGTH).C          // channel that ticks world physics
+	pingChan := time.NewTicker(PING_LENGTH).C            // channel that sends game state to players
 
 	log.Println("Running on localhost:8080")
 
@@ -46,6 +49,9 @@ func main() {
 			log.Printf("Register request!") //: %+v\n", request)
 			player := NewPlayer("POOPY")
 			world.AddPlayer(player)
+
+			// send player initial rules, map, or other immutable data
+			conn.OutputChan <- rulesJson
 
 			// listen to input/output/disconnect chans on player
 			go (func() {
@@ -95,9 +101,9 @@ func main() {
 			delete(playerOutputChans, player) // stop notifying departed player
 
 		case <-tickerChan:
-			// tick the world
 			world.Tick()
 
+		case <-pingChan:
 			// send all players the updated world
 			worldJson, _ := json.Marshal(world)
 			for _, outputChan := range playerOutputChans {

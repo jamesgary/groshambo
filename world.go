@@ -5,15 +5,32 @@ import (
 	"time"
 )
 
+const (
+	FRICTION     = 0.999
+	ACCELERATION = 0.0004
+)
+
 type World struct {
-	Players     []*Player `json:"players"`
-	currentTime time.Time `json:"currentTime"`
+	Players []*Player `json:"players"`
+
+	rules       Rules
+	currentTime time.Time
+}
+
+type Rules struct {
+	Friction     float64 `json:"friction"`
+	Acceleration float64 `json:"acceleration"`
 }
 
 func NewWorld() *World {
 	return &World{
-		Players:     []*Player{},
+		Players: []*Player{},
+
 		currentTime: time.Now(),
+		rules: Rules{
+			Friction:     FRICTION,
+			Acceleration: ACCELERATION,
+		},
 	}
 }
 

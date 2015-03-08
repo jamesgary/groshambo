@@ -6,10 +6,14 @@ var Renderer = require("./renderer.js");
 
 var HOST = "localhost:8080";
 var player = {
-  goingUp: false,
-  goingDown: false,
-  goingLeft: false,
-  goingRight: false
+  x: 20,
+  y: 20,
+  x_speed: 0,
+  y_speed: 0,
+  going_up: false,
+  going_down: false,
+  going_left: false,
+  going_right: false
 };
 var conn = undefined,
     world = undefined,
@@ -24,24 +28,33 @@ $(function () {
     console.error("Connection lost!");
   };
   conn.onmessage = function (evt) {
-    var serverGameState = JSON.parse(evt.data);
-    //console.log("Received", serverGameState);
-    //if (evt.data.player)  { updatePlayer(evt.data.player) }
-    //if (evt.data.world)   { updateWorld(evt.data.world) }
-    if (serverGameState.players) {
-      updatePlayers(serverGameState.players);
+    var msg = JSON.parse(evt.data);
+    if (msg.friction) {
+      // need better type detection
+      world.rules = {
+        friction: msg.friction,
+        acceleration: msg.acceleration
+      };
+    }
+    if (msg.players) {
+      updatePlayers(msg.players);
     }
   };
 
-  var $canvas = $("[role=game]");
+  world = {
+    players: [], //player],
+    rules: {},
+    updatedAt: Date.now()
+  };
 
-  listenToPlayerInput();
-  world = { players: [] };
   var renderer = new Renderer($("canvas[role=game]")[0], world);
   renderer.start();
+
+  listenToPlayerInput();
 });
 
 function updatePlayers(players) {
+  world.updatedAt = Date.now();
   world.players = players;
 }
 
@@ -50,32 +63,32 @@ function listenToPlayerInput() {
     switch (e.which) {
       case 37:
         // left
-        if (!player.goingLeft) {
-          player.goingLeft = true;
+        if (!player.going_left) {
+          player.going_left = true;
           updateServer();
         }
         break;
 
       case 38:
         // up
-        if (!player.goingUp) {
-          player.goingUp = true;
+        if (!player.going_up) {
+          player.going_up = true;
           updateServer();
         }
         break;
 
       case 39:
         // right
-        if (!player.goingRight) {
-          player.goingRight = true;
+        if (!player.going_right) {
+          player.going_right = true;
           updateServer();
         }
         break;
 
       case 40:
         // down
-        if (!player.goingDown) {
-          player.goingDown = true;
+        if (!player.going_down) {
+          player.going_down = true;
           updateServer();
         }
         break;
@@ -86,25 +99,25 @@ function listenToPlayerInput() {
     switch (e.which) {
       case 37:
         // left
-        player.goingLeft = false;
+        player.going_left = false;
         updateServer();
         break;
 
       case 38:
         // up
-        player.goingUp = false;
+        player.going_up = false;
         updateServer();
         break;
 
       case 39:
         // right
-        player.goingRight = false;
+        player.going_right = false;
         updateServer();
         break;
 
       case 40:
         // down
-        player.goingDown = false;
+        player.going_down = false;
         updateServer();
         break;
     }
@@ -139,7 +152,8 @@ var WIDTH = 400;
 var HEIGHT = 300;
 
 var water = "rgba(10, 100, 255, 1.0)";
-var land = "#FDEC90";
+var land = "rgba(253, 236, 144, 1)";
+var landcast = "rgba(253, 236, 144, 0.9)";
 
 module.exports = (function () {
   function Renderer(canvas, world) {
@@ -154,6 +168,8 @@ module.exports = (function () {
     start: {
       value: function start() {
         this.render();
+        this.ctx.fillStyle = land;
+        this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
       },
       writable: true,
       configurable: true
@@ -175,8 +191,8 @@ module.exports = (function () {
             var player = _step.value;
 
             this.ctx.beginPath();
-            this.ctx.arc(player.x, player.y, radius, 0, 2 * Math.PI, false);
-            this.ctx.fillStyle = "#0f0";
+            this.ctx.arc(player.x, player.y, player.dr ? radius : 10, 0, 2 * Math.PI, false);
+            this.ctx.fillStyle = player.dr ? "#f00" : "#0f0";
             this.ctx.fill();
             this.ctx.lineWidth = 2;
             this.ctx.strokeStyle = "#030";
@@ -197,9 +213,70 @@ module.exports = (function () {
           }
         }
 
+        this.deadReckon();
+
         requestAnimationFrame(function () {
           return _this.render();
         });
+      },
+      writable: true,
+      configurable: true
+    },
+    deadReckon: {
+      value: function deadReckon() {
+        //this.world.rules = {friction: 0.999, acceleration: 0.0000000001};
+
+        if (this.world.rules.friction && this.world.rules.acceleration) {
+          var now = Date.now();
+          var t = now - this.world.updatedAt;
+          var a = this.world.rules.acceleration;
+
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = this.world.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var player = _step.value;
+
+              //player.dr = true; // for debugging dead reckoning
+              var x_a = 0;
+              var y_a = 0;
+              if (player.going_up) {
+                y_a = -a;
+              }
+              if (player.going_down) {
+                y_a = a;
+              }
+              if (player.going_left) {
+                x_a = -a;
+              }
+              if (player.going_right) {
+                x_a = a;
+              }
+
+              player.x += player.x_speed * t + 0.5 * x_a * t * t;
+              player.y += player.y_speed * t + 0.5 * y_a * t * t;
+              player.x_speed += x_a * t;
+              player.y_speed += y_a * t;
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator["return"]) {
+                _iterator["return"]();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          this.world.updatedAt = now;
+        }
       },
       writable: true,
       configurable: true
@@ -208,82 +285,5 @@ module.exports = (function () {
 
   return Renderer;
 })();
-
-//var ballX = 200;
-//var ballY = 150;
-//var xSpeed = 0;
-//var ySpeed = 0;
-//var radius = 25;
-//var texts = [];
-//
-//container.addEventListener("click", function() {
-//  var mouseX = event.x - container.offsetLeft;
-//  var mouseY = event.y - container.offsetTop;
-//  if (distance(ballX, ballY, mouseX, mouseY) < radius) {
-//    texts.push({text: "YAY", x: mouseX, y: mouseY, r: 0, g: 255, b: 0, opacity: 1})
-//  } else {
-//    texts.push({text: "BOO", x: mouseX, y: mouseY, r: 255, g: 0, b: 0, opacity: 1})
-//  }
-//});
-//
-//gameLoop();
-//
-//function drawBall() {
-//  ctx.fillStyle = "rgba(223, 239, 255, 0.2)";
-//  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-//
-//  ctx.beginPath();
-//  ctx.arc(ballX, ballY, radius, 0, 2 * Math.PI, false);
-//  ctx.fillStyle = '#0f0';
-//  ctx.fill();
-//  ctx.lineWidth = 2;
-//  ctx.strokeStyle = '#030';
-//  ctx.stroke();
-//}
-//
-//function drawText(text, x, y, r, g, b) {
-//  effectsCtx.clearRect(0, 0, WIDTH, HEIGHT);
-//  for (var i = 0; i < texts.length; i++) {
-//    var t = texts[i];
-//    effectsCtx.fillStyle = "rgba("+[t.r,t.g,t.b,t.opacity].join(',')+")";
-//    effectsCtx.strokeStyle = "rgba("+[0,0,0,t.opacity].join(',')+")";
-//    effectsCtx.fillText(t.text, t.x, t.y);
-//    effectsCtx.strokeText(t.text, t.x, t.y);
-//    t.y--;
-//    t.opacity -= .04;
-//    if (t.opacity <= 0) {
-//      texts.splice(i, 1);
-//      i--;
-//    }
-//  }
-//}
-//
-//function moveBall() {
-//  var speedVariance = 1;
-//  var maxSpeed = 1;
-//  xSpeed += (speedVariance / 2) - (Math.random() * speedVariance);
-//  ySpeed += (speedVariance / 2) - (Math.random() * speedVariance);
-//  xSpeed = clamp(xSpeed, -1 * maxSpeed, maxSpeed);
-//  ySpeed = clamp(ySpeed, -1 * maxSpeed, maxSpeed);
-//
-//  ballX += xSpeed;
-//  ballY += ySpeed;
-//  if (ballX < 0 || ballX > WIDTH) {
-//    ballX = clamp(ballX, 0, WIDTH);
-//    xSpeed *= -1;
-//  }
-//  if (ballY < 0 || ballY > HEIGHT) {
-//    ballY = clamp(ballY, 0, HEIGHT);
-//    ySpeed *= -1;
-//  }
-//}
-//
-//function clamp(num, min, max) {
-//  return Math.min(Math.max(num, min), max);
-//};
-//
-//function distance(x1, y1, x2, y2) {
-//  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
-//}
 
 },{}]},{},[1])

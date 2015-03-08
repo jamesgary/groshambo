@@ -3,10 +3,14 @@ let Renderer = require("./renderer.js");
 
 let HOST = "localhost:8080";
 let player = {
-  goingUp: false,
-  goingDown: false,
-  goingLeft: false,
-  goingRight: false
+  x: 20,
+  y: 20,
+  x_speed: 0,
+  y_speed: 0,
+  going_up: false,
+  going_down: false,
+  going_left: false,
+  going_right: false
 };
 let conn, world, renderer;
 
@@ -15,22 +19,33 @@ $(function() {
   conn.onopen = function(evt) { console.log("Welcome!"); };
   conn.onclose = function(evt) { console.error("Connection lost!") };
   conn.onmessage = function(evt) {
-    let serverGameState = JSON.parse(evt.data);
-    //console.log("Received", serverGameState);
-    //if (evt.data.player)  { updatePlayer(evt.data.player) }
-    //if (evt.data.world)   { updateWorld(evt.data.world) }
-    if (serverGameState.players) { updatePlayers(serverGameState.players) }
+    let msg = JSON.parse(evt.data);
+    if (msg.friction) { // need better type detection
+      world.rules = {
+        friction: msg.friction,
+        acceleration: msg.acceleration
+      }
+    }
+    if (msg.players) {
+      updatePlayers(msg.players)
+    }
   };
 
-  let $canvas = $("[role=game]");
 
-  listenToPlayerInput();
-  world = {players:[]};
+  world = {
+    players: [],//player],
+    rules: {},
+    updatedAt: Date.now()
+  };
+
   let renderer = new Renderer($("canvas[role=game]")[0], world);
   renderer.start();
+
+  listenToPlayerInput();
 });
 
 function updatePlayers(players) {
+  world.updatedAt = Date.now();
   world.players = players;
 }
 
@@ -38,29 +53,29 @@ function listenToPlayerInput() {
   $("body").keydown(function(e) {
     switch(e.which) {
       case 37: // left
-        if (!player.goingLeft) {
-          player.goingLeft = true;
+        if (!player.going_left) {
+          player.going_left = true;
           updateServer();
         }
         break;
 
       case 38: // up
-        if (!player.goingUp) {
-          player.goingUp = true;
+        if (!player.going_up) {
+          player.going_up = true;
           updateServer();
         }
         break;
 
       case 39: // right
-        if (!player.goingRight) {
-          player.goingRight = true;
+        if (!player.going_right) {
+          player.going_right = true;
           updateServer();
         }
         break;
 
       case 40: // down
-        if (!player.goingDown) {
-          player.goingDown = true;
+        if (!player.going_down) {
+          player.going_down = true;
           updateServer();
         }
         break;
@@ -70,22 +85,22 @@ function listenToPlayerInput() {
   $("body").keyup(function(e) {
     switch(e.which) {
       case 37: // left
-        player.goingLeft = false;
+        player.going_left = false;
         updateServer();
         break;
 
       case 38: // up
-        player.goingUp = false;
+        player.going_up = false;
         updateServer();
         break;
 
       case 39: // right
-        player.goingRight = false;
+        player.going_right = false;
         updateServer();
         break;
 
       case 40: // down
-        player.goingDown = false;
+        player.going_down = false;
         updateServer();
         break;
     }
