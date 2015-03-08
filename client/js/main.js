@@ -31,13 +31,14 @@ function generateNamePicker() {
     $("[role=generate-more]").click(generateNamePicker);
     $("[role=name]").click(function(evt) {
       let nameData = $(evt.target).data();
-      startGame(nameData.name, nameData.id);
+      $("[role=welcome]").hide();
+      startGame(nameData.id);
     });
   });
 }
 
-function startGame() {
-  conn = new WebSocket("ws://" + HOST + "/ws?foo=bar");
+function startGame(nameId) {
+  conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
   conn.onopen = function(evt) { console.log("Welcome!"); };
   conn.onclose = function(evt) { console.error("Connection lost!") };
   conn.onmessage = function(evt) {
@@ -52,7 +53,6 @@ function startGame() {
       updatePlayers(msg.players)
     }
   };
-
 
   world = {
     players: [],//player],
@@ -72,9 +72,10 @@ function updatePlayers(players) {
 }
 
 function listenToPlayerInput() {
-  $("html").keydown(function(e) {
-    switch(e.which) {
+  $("html").keydown(function(evt) {
+    switch(evt.which) {
       case 37: // left
+        evt.preventDefault();
         if (!player.going_left) {
           player.going_left = true;
           updateServer();
@@ -82,6 +83,7 @@ function listenToPlayerInput() {
         break;
 
       case 38: // up
+        evt.preventDefault();
         if (!player.going_up) {
           player.going_up = true;
           updateServer();
@@ -89,6 +91,7 @@ function listenToPlayerInput() {
         break;
 
       case 39: // right
+        evt.preventDefault();
         if (!player.going_right) {
           player.going_right = true;
           updateServer();
@@ -96,6 +99,7 @@ function listenToPlayerInput() {
         break;
 
       case 40: // down
+        evt.preventDefault();
         if (!player.going_down) {
           player.going_down = true;
           updateServer();
@@ -104,8 +108,8 @@ function listenToPlayerInput() {
     }
   });
 
-  $("body").keyup(function(e) {
-    switch(e.which) {
+  $("body").keyup(function(evt) {
+    switch(evt.which) {
       case 37: // left
         player.going_left = false;
         updateServer();

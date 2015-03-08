@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -50,14 +51,13 @@ func main() {
 	for {
 		select {
 		case conn := <-hub.ConnectionChan:
-			// got a new player!
-
 			// check their name
-			//url := conn.Request.URL
 			nameId := conn.Request.URL.Query().Get("name_id")
-			log.Printf("HERE: %v", nameId)
-			log.Printf("Register request!") //: %+v\n", request)
-			player := NewPlayer("POOPY")
+			name, err := namer.Get(nameId)
+			if err != nil {
+				conn.DisconnectChan <- errors.New("Bad name id!")
+			}
+			player := NewPlayer(name)
 			world.AddPlayer(player)
 
 			// send player initial rules, map, or other immutable data
