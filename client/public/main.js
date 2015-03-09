@@ -15,8 +15,11 @@ var player = {
   going_left: false,
   going_right: false
 };
+var world = {
+  updatedAt: Date.now(),
+  players: []
+};
 var conn = undefined,
-    world = undefined,
     renderer = undefined;
 
 $(function () {
@@ -52,28 +55,28 @@ function startGame(nameId) {
   };
   conn.onmessage = function (evt) {
     var msg = JSON.parse(evt.data);
+
+    // TODO better msg type detection
     if (msg.friction) {
-      // need better type detection
+      // must be a rules update
       world.rules = {
         friction: msg.friction,
-        acceleration: msg.acceleration
+        acceleration: msg.acceleration,
+        map_width: msg.map_width,
+        map_height: msg.map_height
       };
+
+      renderer = new Renderer($("canvas[role=game]")[0], world);
+      renderer.start();
+
+      listenToPlayerInput();
     }
+
     if (msg.players) {
+      // must be a gamestate update
       updatePlayers(msg.players);
     }
   };
-
-  world = {
-    players: [], //player],
-    rules: {},
-    updatedAt: Date.now()
-  };
-
-  var renderer = new Renderer($("canvas[role=game]")[0], world);
-  renderer.start();
-
-  listenToPlayerInput();
 }
 
 function updatePlayers(players) {
@@ -175,9 +178,6 @@ var _prototypeProperties = function (child, staticProps, instanceProps) { if (st
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var WIDTH = 400;
-var HEIGHT = 300;
-
 var water = "rgba(10, 100, 255, 1.0)";
 var land = "rgba(253, 236, 144, 1)";
 var landcast = "rgba(253, 236, 144, 0.9)";
@@ -185,6 +185,9 @@ var landcast = "rgba(253, 236, 144, 0.9)";
 module.exports = (function () {
   function Renderer(canvas, world) {
     _classCallCheck(this, Renderer);
+
+    $(canvas).attr("width", world.rules.map_width);
+    $(canvas).attr("height", world.rules.map_height);
 
     this.canvas = canvas;
     this.ctx = this.canvas.getContext("2d");
@@ -196,7 +199,8 @@ module.exports = (function () {
       value: function start() {
         this.render();
         this.ctx.fillStyle = land;
-        this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        console.log(this.world.rules);
+        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
       },
       writable: true,
       configurable: true
@@ -206,7 +210,7 @@ module.exports = (function () {
         var _this = this;
 
         this.ctx.fillStyle = land;
-        this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
         var radius = 5;
         var _iteratorNormalCompletion = true;

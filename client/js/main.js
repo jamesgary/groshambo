@@ -12,7 +12,11 @@ let player = {
   going_left: false,
   going_right: false
 };
-let conn, world, renderer;
+let world = {
+  updatedAt: Date.now(),
+  players: []
+};
+let conn, renderer;
 
 $(function() {
   generateNamePicker();
@@ -43,27 +47,27 @@ function startGame(nameId) {
   conn.onclose = function(evt) { console.error("Connection lost!") };
   conn.onmessage = function(evt) {
     let msg = JSON.parse(evt.data);
-    if (msg.friction) { // need better type detection
+
+    // TODO better msg type detection
+    if (msg.friction) { // must be a rules update
       world.rules = {
         friction: msg.friction,
-        acceleration: msg.acceleration
+        acceleration: msg.acceleration,
+        map_width: msg.map_width,
+        map_height: msg.map_height
       }
+
+      renderer = new Renderer($("canvas[role=game]")[0], world);
+      renderer.start();
+
+      listenToPlayerInput();
     }
-    if (msg.players) {
+
+    if (msg.players) { // must be a gamestate update
       updatePlayers(msg.players)
     }
   };
 
-  world = {
-    players: [],//player],
-    rules: {},
-    updatedAt: Date.now()
-  };
-
-  let renderer = new Renderer($("canvas[role=game]")[0], world);
-  renderer.start();
-
-  listenToPlayerInput();
 }
 
 function updatePlayers(players) {

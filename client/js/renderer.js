@@ -1,12 +1,12 @@
-let WIDTH = 400;
-let HEIGHT = 300;
-
 let water = "rgba(10, 100, 255, 1.0)";
 let land = "rgba(253, 236, 144, 1)";
 let landcast = "rgba(253, 236, 144, 0.9)";
 
 module.exports = class Renderer {
   constructor(canvas, world) {
+    $(canvas).attr('width', world.rules.map_width);
+    $(canvas).attr('height', world.rules.map_height);
+
     this.canvas = canvas;
     this.ctx = this.canvas.getContext("2d");
     this.world = world;
@@ -15,12 +15,13 @@ module.exports = class Renderer {
   start() {
     this.render();
     this.ctx.fillStyle = land;
-    this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    console.log(this.world.rules)
+    this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
   }
 
   render() {
     this.ctx.fillStyle = land;
-    this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
     let radius = 5;
     for (let player of this.world.players) {

@@ -8,6 +8,8 @@ import (
 const (
 	FRICTION     = 0.999
 	ACCELERATION = 0.0004
+	MAP_WIDTH    = 800
+	MAP_HEIGHT   = 600
 )
 
 type World struct {
@@ -20,6 +22,8 @@ type World struct {
 type Rules struct {
 	Friction     float64 `json:"friction"`
 	Acceleration float64 `json:"acceleration"`
+	MapWidth     int     `json:"map_width"`
+	MapHeight    int     `json:"map_height"`
 }
 
 func NewWorld() *World {
@@ -30,6 +34,8 @@ func NewWorld() *World {
 		rules: Rules{
 			Friction:     FRICTION,
 			Acceleration: ACCELERATION,
+			MapWidth:     MAP_WIDTH,
+			MapHeight:    MAP_HEIGHT,
 		},
 	}
 }
