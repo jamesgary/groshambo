@@ -1,5 +1,5 @@
 /* Background pattern from subtlepatterns.com */
-html, body {
+html {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -9,11 +9,11 @@ html, body {
   background: url('/images/congruent_pentagon.png');
   font-family: 'Nunito', Arial, serif;
   font-weight: 300; }
-  html h1, body h1 {
+  html h1 {
     font-family: 'Nunito', Arial, serif;
     font-weight: 700;
     margin: 0; }
-  html .welcome, body .welcome {
+  html .welcome {
     background: #fff;
     border-radius: 5px;
     border: 2px rgba(20, 150, 20, 0.8) solid;
@@ -22,7 +22,7 @@ html, body {
     padding: 10px;
     text-align: center;
     width: 400px; }
-    html .welcome a, body .welcome a {
+    html .welcome a {
       background: #dfd;
       border-radius: 3px;
       border: 1px #8b8 solid;
@@ -31,12 +31,77 @@ html, body {
       margin: 5px;
       padding: 5px;
       width: 150px; }
-      html .welcome a.generate-more, body .welcome a.generate-more {
+      html .welcome a.generate-more {
         width: 200px; }
-      html .welcome a:hover, body .welcome a:hover {
+      html .welcome a:hover {
         background: #cec; }
-      html .welcome a:active, body .welcome a:active {
+      html .welcome a:active {
         background: #bdb; }
-  html canvas, body canvas {
+  html .element-chooser {
+    background: #fff;
+    border-radius: 5px;
+    border: 2px rgba(20, 150, 20, 0.8) solid;
+    box-shadow: 0 0 5px 0px rgba(0, 0, 0, 0.75);
+    margin: 0 auto;
+    padding: 10px;
+    text-align: center;
+    width: 400px;
+    position: absolute;
+    margin: 20px auto;
+    left: 0;
+    right: 0; }
+    html .element-chooser .element {
+      border-radius: 3px;
+      border-size: 1px;
+      border-style: solid;
+      cursor: pointer;
+      display: inline-block;
+      margin: 5px;
+      padding: 5px;
+      width: 100px;
+      font-weight: 400; }
+      html .element-chooser .element.water {
+        border-color: #5ac;
+        background: #cff;
+        color: #0F0FBA; }
+        html .element-chooser .element.water:hover {
+          border-color: #3a9cc3;
+          background: #a8ffff;
+          color: #0c0c99; }
+      html .element-chooser .element.flame {
+        border-color: #E81111;
+        background: #FDDEA0;
+        color: #AB0505; }
+        html .element-chooser .element.flame:hover {
+          border-color: #d00f0f;
+          background: #fcd587;
+          color: #920404; }
+      html .element-chooser .element.earth {
+        border-color: #91770E;
+        background: #37E408;
+        color: #FFF; }
+        html .element-chooser .element.earth:hover {
+          border-color: #62510a;
+          background: #31cb07; }
+    html .element-chooser .explanations {
+      height: 50px;
+      position: relative; }
+      html .element-chooser .explanations p {
+        position: absolute;
+        width: 100%;
+        text-align: center; }
+      html .element-chooser .explanations .flamey {
+        font-weight: 400;
+        color: #e81111; }
+      html .element-chooser .explanations .watery {
+        font-weight: 400;
+        color: #3B8CAD; }
+      html .element-chooser .explanations .earthy {
+        font-weight: 400;
+        color: #3BAB15; }
+  html canvas {
     display: block;
     margin: 0 auto; }
+
+.hidden {
+  display: none; }

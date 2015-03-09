@@ -61,6 +61,35 @@ function startGame(nameId) {
       world.players = msg.players;
     }
   };
+
+  showElementChooser();
+}
+
+function showElementChooser() {
+  var $explanations = $("[role=explanations] p");
+  $explanations.hide();
+  $("[role=element-chooser]").show();
+
+  $("[role=flame]").mouseover(function () {
+    $explanations.hide();
+    $("[role=flame-explanation]").show();
+  }).mouseleave(function () {
+    $explanations.hide();
+  });
+
+  $("[role=water]").mouseover(function () {
+    $explanations.hide();
+    $("[role=water-explanation]").show();
+  }).mouseleave(function () {
+    $explanations.hide();
+  });
+
+  $("[role=earth]").mouseover(function () {
+    $explanations.hide();
+    $("[role=earth-explanation]").show();
+  }).mouseleave(function () {
+    $explanations.hide();
+  });
 }
 
 },{"../node_modules/babelify/node_modules/babel-core/browser-polyfill.js":6,"./input.js":2,"./player.js":3,"./renderer.js":4,"./welcome.js":5}],2:[function(require,module,exports){
