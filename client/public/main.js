@@ -3,13 +3,11 @@
 
 var Player = require("./player.js");
 var Renderer = require("./renderer.js");
+var Welcome = require("./welcome.js");
+var Input = require("./input.js");
 
 var HOST = "localhost:8080";
 var player = {
-  x: 20,
-  y: 20,
-  x_speed: 0,
-  y_speed: 0,
   going_up: false,
   going_down: false,
   going_left: false,
@@ -23,27 +21,8 @@ var conn = undefined,
     renderer = undefined;
 
 $(function () {
-  generateNamePicker();
+  Welcome.generateNamePicker(HOST, startGame);
 });
-
-function generateNamePicker() {
-  $.ajax("//" + HOST + "/names").done(function (msg) {
-    var names = JSON.parse(msg);
-    var namesHtml = "";
-    for (var i = 0; i < names.length; i++) {
-      namesHtml += "<a role=\"name\" data-name=\"" + names[i][0] + "\" data-id=\"" + names[i][1] + "\">" + names[i][0] + "</a>";
-    }
-    namesHtml += "<a class=\"generate-more\" role=\"generate-more\">Generate more names</a>";
-
-    $("[role=name-list]").html(namesHtml);
-    $("[role=generate-more]").click(generateNamePicker);
-    $("[role=name]").click(function (evt) {
-      var nameData = $(evt.target).data();
-      $("[role=welcome]").hide();
-      startGame(nameData.id);
-    });
-  });
-}
 
 function startGame(nameId) {
   conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
@@ -69,96 +48,95 @@ function startGame(nameId) {
       renderer = new Renderer($("canvas[role=game]")[0], world);
       renderer.start();
 
-      listenToPlayerInput();
+      Input.listenToPlayerInput(player, function () {
+        conn.send(JSON.stringify(player));
+      });
     }
 
     if (msg.players) {
       // must be a gamestate update
-      updatePlayers(msg.players);
+      world.updatedAt = Date.now();
+      world.players = msg.players;
     }
   };
 }
 
-function updatePlayers(players) {
-  world.updatedAt = Date.now();
-  world.players = players;
-}
+},{"./input.js":2,"./player.js":3,"./renderer.js":4,"./welcome.js":5}],2:[function(require,module,exports){
+"use strict";
 
-function listenToPlayerInput() {
-  $("html").keydown(function (evt) {
-    switch (evt.which) {
-      case 37:
-        // left
-        evt.preventDefault();
-        if (!player.going_left) {
-          player.going_left = true;
-          updateServer();
-        }
-        break;
+module.exports = {
+  listenToPlayerInput: function listenToPlayerInput(player, callback) {
+    $("html").keydown(function (evt) {
+      switch (evt.which) {
+        case 37:
+          // left
+          evt.preventDefault();
+          if (!player.going_left) {
+            player.going_left = true;
+            callback();
+          }
+          break;
 
-      case 38:
-        // up
-        evt.preventDefault();
-        if (!player.going_up) {
-          player.going_up = true;
-          updateServer();
-        }
-        break;
+        case 38:
+          // up
+          evt.preventDefault();
+          if (!player.going_up) {
+            player.going_up = true;
+            callback();
+          }
+          break;
 
-      case 39:
-        // right
-        evt.preventDefault();
-        if (!player.going_right) {
-          player.going_right = true;
-          updateServer();
-        }
-        break;
+        case 39:
+          // right
+          evt.preventDefault();
+          if (!player.going_right) {
+            player.going_right = true;
+            callback();
+          }
+          break;
 
-      case 40:
-        // down
-        evt.preventDefault();
-        if (!player.going_down) {
-          player.going_down = true;
-          updateServer();
-        }
-        break;
-    }
-  });
+        case 40:
+          // down
+          evt.preventDefault();
+          if (!player.going_down) {
+            player.going_down = true;
+            callback();
+          }
+          break;
+      }
+    });
 
-  $("body").keyup(function (evt) {
-    switch (evt.which) {
-      case 37:
-        // left
-        player.going_left = false;
-        updateServer();
-        break;
+    $("body").keyup(function (evt) {
+      switch (evt.which) {
+        case 37:
+          // left
+          player.going_left = false;
+          callback();
+          break;
 
-      case 38:
-        // up
-        player.going_up = false;
-        updateServer();
-        break;
+        case 38:
+          // up
+          player.going_up = false;
+          callback();
+          break;
 
-      case 39:
-        // right
-        player.going_right = false;
-        updateServer();
-        break;
+        case 39:
+          // right
+          player.going_right = false;
+          callback();
+          break;
 
-      case 40:
-        // down
-        player.going_down = false;
-        updateServer();
-        break;
-    }
-  });
-}
+        case 40:
+          // down
+          player.going_down = false;
+          callback();
+          break;
+      }
+    });
+  }
+};
 
-function updateServer() {
-  conn.send(JSON.stringify(player));
-}
-
-},{"./player.js":2,"./renderer.js":3}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
@@ -171,7 +149,7 @@ module.exports = function Player(name, x, y) {
   this.y = y;
 };
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -316,5 +294,31 @@ module.exports = (function () {
 
   return Renderer;
 })();
+
+},{}],5:[function(require,module,exports){
+"use strict";
+
+module.exports = {
+  generateNamePicker: function generateNamePicker(host, callback) {
+    var _this = this;
+
+    $.ajax("//" + host + "/names").done(function (msg) {
+      var names = JSON.parse(msg);
+      var namesHtml = "";
+      for (var i = 0; i < names.length; i++) {
+        namesHtml += "<a role=\"name\" data-name=\"" + names[i][0] + "\" data-id=\"" + names[i][1] + "\">" + names[i][0] + "</a>";
+      }
+      namesHtml += "<a class=\"generate-more\" role=\"generate-more\">Generate more names</a>";
+
+      $("[role=name-list]").html(namesHtml);
+      $("[role=generate-more]").click(_this.generateNamePicker);
+      $("[role=name]").click(function (evt) {
+        var nameData = $(evt.target).data();
+        $("[role=welcome]").hide();
+        callback(nameData.id);
+      });
+    });
+  }
+};
 
 },{}]},{},[1])

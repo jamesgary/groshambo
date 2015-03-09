@@ -1,12 +1,10 @@
 let Player = require("./player.js");
 let Renderer = require("./renderer.js");
+let Welcome = require("./welcome.js");
+let Input = require("./input.js");
 
 let HOST = "localhost:8080";
 let player = {
-  x: 20,
-  y: 20,
-  x_speed: 0,
-  y_speed: 0,
   going_up: false,
   going_down: false,
   going_left: false,
@@ -19,27 +17,8 @@ let world = {
 let conn, renderer;
 
 $(function() {
-  generateNamePicker();
+  Welcome.generateNamePicker(HOST, startGame);
 });
-
-function generateNamePicker() {
-  $.ajax("//" + HOST + "/names").done(function(msg) {
-    let names = JSON.parse(msg);
-    let namesHtml = "";
-    for (let i = 0; i < names.length; i++) {
-      namesHtml += `<a role="name" data-name="${names[i][0]}" data-id="${names[i][1]}">${names[i][0]}</a>`;
-    }
-    namesHtml += `<a class="generate-more" role="generate-more">Generate more names</a>`;
-
-    $("[role=name-list]").html(namesHtml);
-    $("[role=generate-more]").click(generateNamePicker);
-    $("[role=name]").click(function(evt) {
-      let nameData = $(evt.target).data();
-      $("[role=welcome]").hide();
-      startGame(nameData.id);
-    });
-  });
-}
 
 function startGame(nameId) {
   conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
@@ -60,83 +39,14 @@ function startGame(nameId) {
       renderer = new Renderer($("canvas[role=game]")[0], world);
       renderer.start();
 
-      listenToPlayerInput();
+      Input.listenToPlayerInput(player, function() {
+        conn.send(JSON.stringify(player));
+      });
     }
 
     if (msg.players) { // must be a gamestate update
-      updatePlayers(msg.players)
+      world.updatedAt = Date.now();
+      world.players = msg.players;
     }
   };
-
-}
-
-function updatePlayers(players) {
-  world.updatedAt = Date.now();
-  world.players = players;
-}
-
-function listenToPlayerInput() {
-  $("html").keydown(function(evt) {
-    switch(evt.which) {
-      case 37: // left
-        evt.preventDefault();
-        if (!player.going_left) {
-          player.going_left = true;
-          updateServer();
-        }
-        break;
-
-      case 38: // up
-        evt.preventDefault();
-        if (!player.going_up) {
-          player.going_up = true;
-          updateServer();
-        }
-        break;
-
-      case 39: // right
-        evt.preventDefault();
-        if (!player.going_right) {
-          player.going_right = true;
-          updateServer();
-        }
-        break;
-
-      case 40: // down
-        evt.preventDefault();
-        if (!player.going_down) {
-          player.going_down = true;
-          updateServer();
-        }
-        break;
-    }
-  });
-
-  $("body").keyup(function(evt) {
-    switch(evt.which) {
-      case 37: // left
-        player.going_left = false;
-        updateServer();
-        break;
-
-      case 38: // up
-        player.going_up = false;
-        updateServer();
-        break;
-
-      case 39: // right
-        player.going_right = false;
-        updateServer();
-        break;
-
-      case 40: // down
-        player.going_down = false;
-        updateServer();
-        break;
-    }
-  });
-}
-
-function updateServer() {
-  conn.send(JSON.stringify(player));
 }
