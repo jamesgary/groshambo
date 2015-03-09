@@ -27,6 +27,7 @@ module.exports = class Renderer {
     this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
     let radius = 5;
+
     for (let player of this.world.players) {
       this.ctx.beginPath();
       this.ctx.arc(player.x, player.y, player.dr ? radius : 10, 0, 2 * Math.PI, false);

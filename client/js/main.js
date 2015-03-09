@@ -1,9 +1,11 @@
+require("../node_modules/babelify/node_modules/babel-core/browser-polyfill.js"); // :-\
+
 let Player = require("./player.js");
 let Renderer = require("./renderer.js");
 let Welcome = require("./welcome.js");
 let Input = require("./input.js");
 
-let HOST = "localhost:8080";
+let HOST = "162.243.131.44:8080";
 let player = {
   going_up: false,
   going_down: false,
