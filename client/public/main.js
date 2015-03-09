@@ -179,6 +179,8 @@ module.exports = (function () {
         this.ctx.fillStyle = land;
         console.log(this.world.rules);
         this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
+        this.ctx.font = "800 9pt Arial";
+        this.ctx.textAlign = "center";
       },
       writable: true,
       configurable: true
@@ -206,6 +208,15 @@ module.exports = (function () {
             this.ctx.lineWidth = 2;
             this.ctx.strokeStyle = "#030";
             this.ctx.stroke();
+
+            var _name = player.name;
+            var nameX = player.x;
+            var nameY = player.y + 25;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = "#fff";
+            this.ctx.strokeText(_name, nameX, nameY);
+            this.ctx.fillStyle = "#000";
+            this.ctx.fillText(_name, nameX, nameY);
           }
         } catch (err) {
           _didIteratorError = true;

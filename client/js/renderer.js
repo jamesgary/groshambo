@@ -17,6 +17,9 @@ module.exports = class Renderer {
     this.ctx.fillStyle = land;
     console.log(this.world.rules)
     this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
+    this.ctx.font = "800 9pt Arial";
+    this.ctx.textAlign = "center";
+
   }
 
   render() {
@@ -32,6 +35,15 @@ module.exports = class Renderer {
       this.ctx.lineWidth = 2;
       this.ctx.strokeStyle = '#030';
       this.ctx.stroke();
+
+      let name = player.name;
+      let nameX = player.x;
+      let nameY = player.y + 25;
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeStyle = "#fff";
+      this.ctx.strokeText(name, nameX, nameY);
+      this.ctx.fillStyle = "#000";
+      this.ctx.fillText(name, nameX, nameY);
     }
     this.deadReckon()
 
