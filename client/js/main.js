@@ -5,8 +5,9 @@ let Renderer = require("./renderer.js");
 let Welcome = require("./welcome.js");
 let Input = require("./input.js");
 
-let HOST = "162.243.131.44:8080";
-let player = {
+let HOST = window.location.hostname + ":8080";
+let movementInput = {
+  type: "movement",
   going_up: false,
   going_down: false,
   going_left: false,
@@ -24,8 +25,10 @@ $(function() {
 
 function startGame(nameId) {
   conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
-  conn.onopen = function(evt) { console.log("Welcome!"); };
-  conn.onclose = function(evt) { console.error("Connection lost!") };
+  conn.onopen = function() {
+    showElementChooser();
+  };
+  conn.onclose = function() { console.error("Connection lost!") };
   conn.onmessage = function(evt) {
     let msg = JSON.parse(evt.data);
 
@@ -41,8 +44,8 @@ function startGame(nameId) {
       renderer = new Renderer($("canvas[role=game]")[0], world);
       renderer.start();
 
-      Input.listenToPlayerInput(player, function() {
-        conn.send(JSON.stringify(player));
+      Input.listenToPlayerInput(movementInput, function() {
+        conn.send(JSON.stringify(movementInput));
       });
     }
 
@@ -51,20 +54,23 @@ function startGame(nameId) {
       world.players = msg.players;
     }
   };
-
-  showElementChooser();
 }
 
 function showElementChooser() {
   let $explanations = $('[role=explanations] p');
+  let $explanationsChooser = $('[role=element-chooser]');
+
   $explanations.hide();
-  $('[role=element-chooser]').show();
+  $explanationsChooser.show();
 
   $('[role=flame]').mouseover(function() {
     $explanations.hide();
     $('[role=flame-explanation]').show();
   }).mouseleave(function() {
     $explanations.hide();
+  }).click(function() {
+    pickElement('flame');
+    $explanationsChooser.hide();
   });
 
   $('[role=water]').mouseover(function() {
@@ -72,6 +78,9 @@ function showElementChooser() {
     $('[role=water-explanation]').show();
   }).mouseleave(function() {
     $explanations.hide();
+  }).click(function() {
+    pickElement('water');
+    $explanationsChooser.hide();
   });
 
   $('[role=earth]').mouseover(function() {
@@ -79,5 +88,12 @@ function showElementChooser() {
     $('[role=earth-explanation]').show();
   }).mouseleave(function() {
     $explanations.hide();
+  }).click(function() {
+    pickElement('earth');
+    $explanationsChooser.hide();
   });
+}
+
+function pickElement(element) {
+  conn.send(JSON.stringify({type: 'element', element: element}));
 }

@@ -2,14 +2,19 @@ package main
 
 import (
 	//"math"
+	"math/rand"
 	"time"
 )
 
 type Player struct {
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
-	Points int64   `json:"points"`
-	Name   string  `json:"name"`
+	Name    string `json:"name"`
+	Element string `json:"element"`
+	Alive   bool   `json:"alive"`
+	Points  int64  `json:"points"`
+
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+
 	XSpeed float64 `json:"x_speed"`
 	YSpeed float64 `json:"y_speed"`
 
@@ -21,8 +26,6 @@ type Player struct {
 
 func NewPlayer(name string) *Player {
 	return &Player{
-		X:    10, // TODO randomize
-		Y:    10, // TODO randomize
 		Name: name,
 	}
 }
@@ -32,6 +35,15 @@ func (p *Player) SetDirection(up, down, left, right bool) {
 	p.GoingDown = down
 	p.GoingLeft = left
 	p.GoingRight = right
+}
+
+func (p *Player) SpawnAsElement(element string) {
+	if !p.Alive { // only spawn if already dead
+		p.Alive = true
+		p.Element = element
+		p.X = (rand.Float64() * (MAP_WIDTH - 20)) + 10
+		p.Y = (rand.Float64() * (MAP_HEIGHT - 20)) + 10
+	}
 }
 
 func (p *Player) Travel(duration time.Duration) {

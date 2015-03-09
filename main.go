@@ -19,18 +19,28 @@ const (
 	PING_LENGTH = time.Millisecond * 100 // 10 fps
 )
 
+var namer naming.Namer
+
 type PlayerInput struct {
 	player *Player
 	input  []byte
 }
 
-var namer naming.Namer
+// All incoming player messages have a type.
+// Use this to figure out how to unmarshal message.
+type PlayerInputType struct {
+	Type string `json:"type"`
+}
 
 type MovementInput struct {
 	GoingUp    bool `json:"going_up"`
 	GoingDown  bool `json:"going_down"`
 	GoingLeft  bool `json:"going_left"`
 	GoingRight bool `json:"going_right"`
+}
+
+type ElementInput struct {
+	Element string `json:"element"`
 }
 
 func main() {
@@ -93,17 +103,36 @@ func main() {
 			player := playerInput.player
 			inputBytes := playerInput.input
 
-			var movementInput MovementInput
-			err := json.Unmarshal(inputBytes, &movementInput)
+			var playerInputType PlayerInputType
+			err := json.Unmarshal(inputBytes, &playerInputType)
 			if err != nil {
-				log.Println("error parsing player input:", err)
+				log.Println("Error parsing player input type:", err)
 			} else {
-				player.SetDirection(
-					movementInput.GoingUp,
-					movementInput.GoingDown,
-					movementInput.GoingLeft,
-					movementInput.GoingRight,
-				)
+				switch playerInputType.Type {
+				case "movement":
+					var movementInput MovementInput
+					err := json.Unmarshal(inputBytes, &movementInput)
+					if err != nil {
+						log.Println("Error parsing movement input:", err)
+					} else {
+						player.SetDirection(
+							movementInput.GoingUp,
+							movementInput.GoingDown,
+							movementInput.GoingLeft,
+							movementInput.GoingRight,
+						)
+					}
+				case "element":
+					var elementInput ElementInput
+					err := json.Unmarshal(inputBytes, &elementInput)
+					if err != nil {
+						log.Println("Error parsing element input:", err)
+					} else {
+						player.SpawnAsElement(elementInput.Element)
+					}
+				default:
+					log.Printf(`Unknown player input type: "%s"\n`, playerInputType.Type)
+				}
 			}
 
 		case player := <-disconnectChan: // listen for player disconnects

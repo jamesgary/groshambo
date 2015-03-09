@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"time"
 )
 
@@ -43,20 +42,18 @@ func NewWorld() *World {
 func (w *World) Tick() {
 	timeSinceLastTick := time.Since(w.currentTime)
 	for _, p := range w.Players {
-		p.Travel(timeSinceLastTick)
-		//log.Printf("%+v", p)
+		if p.Alive {
+			p.Travel(timeSinceLastTick)
+		}
 	}
 	w.currentTime = time.Now()
 }
 
 func (w *World) AddPlayer(player *Player) {
-	log.Printf("Player '%s' has joined!", player.Name)
 	w.Players = append(w.Players, player)
 }
 
 func (w *World) RemovePlayer(player *Player) {
-	log.Printf("Kicking player '%s'!", player.Name)
-
 	for i, p := range w.Players {
 		if p == player {
 			copy(w.Players[i:], w.Players[i+1:])     // shift

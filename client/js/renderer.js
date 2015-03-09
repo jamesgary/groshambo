@@ -26,25 +26,41 @@ module.exports = class Renderer {
     this.ctx.fillStyle = land;
     this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
-    let radius = 5;
+    let radius = 10;
 
     for (let player of this.world.players) {
-      this.ctx.beginPath();
-      this.ctx.arc(player.x, player.y, player.dr ? radius : 10, 0, 2 * Math.PI, false);
-      this.ctx.fillStyle = player.dr ? '#f00' : '#0f0';
-      this.ctx.fill();
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = '#030';
-      this.ctx.stroke();
+      if (player.alive) {
+        switch(player.element) {
+          case 'water':
+            this.ctx.fillStyle = '#cff';
+            this.ctx.strokeStyle = '#5ac';
+            this.ctx.lineWidth = 1;
+            break;
+          case 'flame':
+            this.ctx.fillStyle = '#E9F422';
+            this.ctx.strokeStyle = '#AB0505';
+            this.ctx.lineWidth = 1;
+            break;
+          case 'earth':
+            this.ctx.fillStyle = '#37e408';
+            this.ctx.strokeStyle = '#91770e';
+            this.ctx.lineWidth = 2;
+            break;
+        }
+        this.ctx.beginPath();
+        this.ctx.arc(player.x, player.y, radius, 0, 2 * Math.PI, false);
+        this.ctx.fill();
+        this.ctx.stroke();
 
-      let name = player.name;
-      let nameX = player.x;
-      let nameY = player.y + 25;
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = "#fff";
-      this.ctx.strokeText(name, nameX, nameY);
-      this.ctx.fillStyle = "#000";
-      this.ctx.fillText(name, nameX, nameY);
+        let name = player.name;
+        let nameX = player.x;
+        let nameY = player.y + 25;
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = "#fff";
+        this.ctx.strokeText(name, nameX, nameY);
+        this.ctx.fillStyle = "#000";
+        this.ctx.fillText(name, nameX, nameY);
+      }
     }
     this.deadReckon()
 
@@ -60,18 +76,20 @@ module.exports = class Renderer {
       let a = this.world.rules.acceleration;
 
       for (let player of this.world.players) {
-        //player.dr = true; // for debugging dead reckoning
-        let x_a = 0;
-        let y_a = 0;
-        if (player.going_up)    { y_a = -a }
-        if (player.going_down)  { y_a =  a }
-        if (player.going_left)  { x_a = -a }
-        if (player.going_right) { x_a =  a }
+        if (player.alive) {
+          //player.dr = true; // for debugging dead reckoning
+          let x_a = 0;
+          let y_a = 0;
+          if (player.going_up)    { y_a = -a }
+          if (player.going_down)  { y_a =  a }
+          if (player.going_left)  { x_a = -a }
+          if (player.going_right) { x_a =  a }
 
-        player.x += (player.x_speed * t) + (0.5 * x_a * t * t)
-        player.y += (player.y_speed * t) + (0.5 * y_a * t * t)
-        player.x_speed += (x_a * t)
-        player.y_speed += (y_a * t)
+          player.x += (player.x_speed * t) + (0.5 * x_a * t * t)
+          player.y += (player.y_speed * t) + (0.5 * y_a * t * t)
+          player.x_speed += (x_a * t)
+          player.y_speed += (y_a * t)
+        }
       }
       this.world.updatedAt = now;
     }

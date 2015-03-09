@@ -8,8 +8,9 @@ var Renderer = require("./renderer.js");
 var Welcome = require("./welcome.js");
 var Input = require("./input.js");
 
-var HOST = "162.243.131.44:8080";
-var player = {
+var HOST = window.location.hostname + ":8080";
+var movementInput = {
+  type: "movement",
   going_up: false,
   going_down: false,
   going_left: false,
@@ -28,10 +29,10 @@ $(function () {
 
 function startGame(nameId) {
   conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
-  conn.onopen = function (evt) {
-    console.log("Welcome!");
+  conn.onopen = function () {
+    showElementChooser();
   };
-  conn.onclose = function (evt) {
+  conn.onclose = function () {
     console.error("Connection lost!");
   };
   conn.onmessage = function (evt) {
@@ -50,8 +51,8 @@ function startGame(nameId) {
       renderer = new Renderer($("canvas[role=game]")[0], world);
       renderer.start();
 
-      Input.listenToPlayerInput(player, function () {
-        conn.send(JSON.stringify(player));
+      Input.listenToPlayerInput(movementInput, function () {
+        conn.send(JSON.stringify(movementInput));
       });
     }
 
@@ -61,20 +62,23 @@ function startGame(nameId) {
       world.players = msg.players;
     }
   };
-
-  showElementChooser();
 }
 
 function showElementChooser() {
   var $explanations = $("[role=explanations] p");
+  var $explanationsChooser = $("[role=element-chooser]");
+
   $explanations.hide();
-  $("[role=element-chooser]").show();
+  $explanationsChooser.show();
 
   $("[role=flame]").mouseover(function () {
     $explanations.hide();
     $("[role=flame-explanation]").show();
   }).mouseleave(function () {
     $explanations.hide();
+  }).click(function () {
+    pickElement("flame");
+    $explanationsChooser.hide();
   });
 
   $("[role=water]").mouseover(function () {
@@ -82,6 +86,9 @@ function showElementChooser() {
     $("[role=water-explanation]").show();
   }).mouseleave(function () {
     $explanations.hide();
+  }).click(function () {
+    pickElement("water");
+    $explanationsChooser.hide();
   });
 
   $("[role=earth]").mouseover(function () {
@@ -89,7 +96,14 @@ function showElementChooser() {
     $("[role=earth-explanation]").show();
   }).mouseleave(function () {
     $explanations.hide();
+  }).click(function () {
+    pickElement("earth");
+    $explanationsChooser.hide();
   });
+}
+
+function pickElement(element) {
+  conn.send(JSON.stringify({ type: "element", element: element }));
 }
 
 },{"../node_modules/babelify/node_modules/babel-core/browser-polyfill.js":6,"./input.js":2,"./player.js":3,"./renderer.js":4,"./welcome.js":5}],2:[function(require,module,exports){
@@ -223,7 +237,7 @@ module.exports = (function () {
         this.ctx.fillStyle = land;
         this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
-        var radius = 5;
+        var radius = 10;
 
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
@@ -233,22 +247,41 @@ module.exports = (function () {
           for (var _iterator = this.world.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
             var player = _step.value;
 
-            this.ctx.beginPath();
-            this.ctx.arc(player.x, player.y, player.dr ? radius : 10, 0, 2 * Math.PI, false);
-            this.ctx.fillStyle = player.dr ? "#f00" : "#0f0";
-            this.ctx.fill();
-            this.ctx.lineWidth = 2;
-            this.ctx.strokeStyle = "#030";
-            this.ctx.stroke();
+            if (player.alive) {
+              switch (player.element) {
+                case "water":
+                  this.ctx.fillStyle = "#cff";
+                  this.ctx.strokeStyle = "#5ac";
+                  this.ctx.lineWidth = 1;
+                  if (_iterator["return"]) _iterator["return"]();
+                  break;
+                case "flame":
+                  this.ctx.fillStyle = "#E9F422";
+                  this.ctx.strokeStyle = "#AB0505";
+                  this.ctx.lineWidth = 1;
+                  if (_iterator["return"]) _iterator["return"]();
+                  break;
+                case "earth":
+                  this.ctx.fillStyle = "#37e408";
+                  this.ctx.strokeStyle = "#91770e";
+                  this.ctx.lineWidth = 2;
+                  if (_iterator["return"]) _iterator["return"]();
+                  break;
+              }
+              this.ctx.beginPath();
+              this.ctx.arc(player.x, player.y, radius, 0, 2 * Math.PI, false);
+              this.ctx.fill();
+              this.ctx.stroke();
 
-            var _name = player.name;
-            var nameX = player.x;
-            var nameY = player.y + 25;
-            this.ctx.lineWidth = 2;
-            this.ctx.strokeStyle = "#fff";
-            this.ctx.strokeText(_name, nameX, nameY);
-            this.ctx.fillStyle = "#000";
-            this.ctx.fillText(_name, nameX, nameY);
+              var _name = player.name;
+              var nameX = player.x;
+              var nameY = player.y + 25;
+              this.ctx.lineWidth = 2;
+              this.ctx.strokeStyle = "#fff";
+              this.ctx.strokeText(_name, nameX, nameY);
+              this.ctx.fillStyle = "#000";
+              this.ctx.fillText(_name, nameX, nameY);
+            }
           }
         } catch (err) {
           _didIteratorError = true;
@@ -291,26 +324,28 @@ module.exports = (function () {
             for (var _iterator = this.world.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
               var player = _step.value;
 
-              //player.dr = true; // for debugging dead reckoning
-              var x_a = 0;
-              var y_a = 0;
-              if (player.going_up) {
-                y_a = -a;
-              }
-              if (player.going_down) {
-                y_a = a;
-              }
-              if (player.going_left) {
-                x_a = -a;
-              }
-              if (player.going_right) {
-                x_a = a;
-              }
+              if (player.alive) {
+                //player.dr = true; // for debugging dead reckoning
+                var x_a = 0;
+                var y_a = 0;
+                if (player.going_up) {
+                  y_a = -a;
+                }
+                if (player.going_down) {
+                  y_a = a;
+                }
+                if (player.going_left) {
+                  x_a = -a;
+                }
+                if (player.going_right) {
+                  x_a = a;
+                }
 
-              player.x += player.x_speed * t + 0.5 * x_a * t * t;
-              player.y += player.y_speed * t + 0.5 * y_a * t * t;
-              player.x_speed += x_a * t;
-              player.y_speed += y_a * t;
+                player.x += player.x_speed * t + 0.5 * x_a * t * t;
+                player.y += player.y_speed * t + 0.5 * y_a * t * t;
+                player.x_speed += x_a * t;
+                player.y_speed += y_a * t;
+              }
             }
           } catch (err) {
             _didIteratorError = true;
