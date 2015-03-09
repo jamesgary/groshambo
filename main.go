@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jamesgary/game/hubber"
-	"github.com/jamesgary/game/naming"
+	"github.com/jamesgary/groshambo/hubber"
+	"github.com/jamesgary/groshambo/naming"
 )
 
 const (
