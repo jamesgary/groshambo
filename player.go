@@ -1,16 +1,21 @@
 package main
 
 import (
-	//"math"
+	"math"
 	"math/rand"
 	"time"
 )
 
+const (
+	RADIUS = 10
+)
+
 type Player struct {
-	Name    string `json:"name"`
-	Element string `json:"element"`
-	Alive   bool   `json:"alive"`
-	Points  int64  `json:"points"`
+	Name    string  `json:"name"`
+	Element string  `json:"element"`
+	Alive   bool    `json:"alive"`
+	Points  int64   `json:"points"`
+	Radius  float64 `json:"radius"`
 
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
@@ -41,6 +46,7 @@ func (p *Player) SpawnAsElement(element string) {
 	if !p.Alive { // only spawn if already dead
 		p.Alive = true
 		p.Element = element
+		p.Radius = RADIUS
 		p.X = (rand.Float64() * (MAP_WIDTH - 20)) + 10
 		p.Y = (rand.Float64() * (MAP_HEIGHT - 20)) + 10
 	}
@@ -74,7 +80,15 @@ func (p *Player) Travel(duration time.Duration) {
 	p.Y += (p.YSpeed * t) + (0.5 * y_a * t * t)
 	p.XSpeed += (x_a * t)
 	p.YSpeed += (y_a * t)
+}
 
-	//p.XSpeed *= math.Pow(FRICTION, ms)
-	//p.YSpeed *= math.Pow(FRICTION, ms)
+func (p *Player) collidesWith(p2 *Player) bool {
+	distance := math.Sqrt(math.Pow(p.X-p2.X, 2) + math.Pow(p.Y-p2.Y, 2))
+	return distance < p.Radius+p2.Radius
+}
+
+func (p *Player) canEat(p2 *Player) bool {
+	return p.Element == "flame" && p2.Element == "earth" ||
+		p.Element == "earth" && p2.Element == "water" ||
+		p.Element == "water" && p2.Element == "flame"
 }

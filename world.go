@@ -46,7 +46,30 @@ func (w *World) Tick() {
 			p.Travel(timeSinceLastTick)
 		}
 	}
+	w.checkforCollisions()
+
 	w.currentTime = time.Now()
+}
+
+func (w *World) checkforCollisions() {
+	i := 0
+	for i < len(w.Players) {
+		playerA := w.Players[i]
+		k := i + 1
+		for k < len(w.Players) {
+			playerB := w.Players[k]
+			if playerA.collidesWith(playerB) {
+				if playerA.canEat(playerB) {
+					playerB.Alive = false
+				}
+				if playerB.canEat(playerA) {
+					playerA.Alive = false
+				}
+			}
+			k++
+		}
+		i++
+	}
 }
 
 func (w *World) AddPlayer(player *Player) {

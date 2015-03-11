@@ -237,8 +237,6 @@ module.exports = (function () {
         this.ctx.fillStyle = land;
         this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
-        var radius = 10;
-
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -269,7 +267,7 @@ module.exports = (function () {
                   break;
               }
               this.ctx.beginPath();
-              this.ctx.arc(player.x, player.y, radius, 0, 2 * Math.PI, false);
+              this.ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI, false);
               this.ctx.fill();
               this.ctx.stroke();
 

@@ -26,8 +26,6 @@ module.exports = class Renderer {
     this.ctx.fillStyle = land;
     this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
-    let radius = 10;
-
     for (let player of this.world.players) {
       if (player.alive) {
         switch(player.element) {
@@ -48,7 +46,7 @@ module.exports = class Renderer {
             break;
         }
         this.ctx.beginPath();
-        this.ctx.arc(player.x, player.y, radius, 0, 2 * Math.PI, false);
+        this.ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI, false);
         this.ctx.fill();
         this.ctx.stroke();
 
