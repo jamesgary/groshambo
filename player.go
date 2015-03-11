@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	RADIUS = 1
+	RADIUS = 10
 )
 
 type Player struct {
@@ -92,7 +92,7 @@ func (p *Player) Travel(duration time.Duration) {
 		p.Y += MAP_HEIGHT
 	}
 	if p.Y > MAP_HEIGHT {
-		p.Y += MAP_HEIGHT
+		p.Y -= MAP_HEIGHT
 	}
 
 }

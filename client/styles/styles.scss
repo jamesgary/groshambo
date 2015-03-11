@@ -190,3 +190,15 @@ h1 {
 .hidden {
   display: none;
 }
+
+.debugger {
+  position: fixed;
+  top: 0;
+  right: 0;
+  background: black;
+  color: white;
+  font-family: monospace;
+  font-size: 12px;
+  text-align: left;
+  min-width: 500px;
+}

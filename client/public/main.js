@@ -233,6 +233,10 @@ var landcast = "rgba(253, 236, 144, 0.9)";
 var CANVAS_WIDTH = 800;
 var CANVAS_HEIGHT = 600;
 
+var MINIMAP_PADDING = 10;
+var MINIMAP_WIDTH = 200;
+var MINIMAP_HEIGHT = 150;
+
 module.exports = (function () {
   function Renderer(canvas, leaderboard) {
     _classCallCheck(this, Renderer);
@@ -290,7 +294,6 @@ module.exports = (function () {
         this.world = world;
         this.currentPlayerName = currentPlayerName;
         console.log(this.world.rules);
-        this.scale = CANVAS_WIDTH / this.world.rules.map_width;
 
         this.ctx.font = "800 9pt Arial";
         this.ctx.textAlign = "center";
@@ -354,37 +357,90 @@ module.exports = (function () {
           var bgWidth = this.patterns.sandBg.width;
           var bgHeight = this.patterns.sandBg.height;
           var currentPlayer = this.world.players[this.currentPlayerName];
-          var x = undefined,
-              y = undefined;
+          var cameraX = undefined,
+              cameraY = undefined,
+              bgX = undefined,
+              bgY = undefined;
           if (currentPlayer) {
-            x = currentPlayer.x;
-            y = currentPlayer.y;
+            cameraX = currentPlayer.x;
+            cameraY = currentPlayer.y;
           } else {
             // place camera in center of map
-            x = this.world.rules.map_width / 2;
-            y = this.world.rules.map_height / 2;
+            cameraX = this.world.rules.map_width / 2;
+            cameraY = this.world.rules.map_height / 2;
           }
-          x %= bgWidth;
-          y %= bgHeight;
 
+          bgX = cameraX % bgWidth;
+          bgY = cameraY % bgHeight;
           this.ctx.fillStyle = this.patterns.sandBg.pattern;
-          this.ctx.translate(-x, -y);
+          this.ctx.translate(-bgX, -bgY);
           this.ctx.fillRect(0, 0, CANVAS_WIDTH * 2, CANVAS_HEIGHT * 2);
-          this.ctx.translate(x, y);
+          this.ctx.translate(bgX, bgY);
 
           for (var _name in this.world.players) {
             var player = this.world.players[_name];
-            if (player.alive && player != currentPlayer) {}
+            if (player.alive && player != currentPlayer) {
+              // TODO check if player is visible in map, don't bother if not
+              var xDelta = player.x - currentPlayer.x;
+              var yDelta = player.y - currentPlayer.y;
+
+              var x = xDelta + CANVAS_WIDTH / 2;
+              var y = yDelta + CANVAS_HEIGHT / 2;
+              this.drawPlayer(player, x, y);
+            }
           }
           if (currentPlayer && currentPlayer.alive) {
             this.drawPlayer(currentPlayer, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
           }
+          this.renderMinimap(cameraX, cameraY);
           this.deadReckon();
         }
 
         requestAnimationFrame(function () {
           return _this.render();
         });
+      },
+      writable: true,
+      configurable: true
+    },
+    renderMinimap: {
+      value: function renderMinimap(viewportX, viewportY) {
+        // scale to minimap position/size
+        this.ctx.save();
+        this.ctx.translate(MINIMAP_PADDING, CANVAS_HEIGHT - MINIMAP_PADDING - MINIMAP_HEIGHT);
+        var minimapScale = MINIMAP_WIDTH / this.world.rules.map_width;
+        this.ctx.scale(minimapScale, minimapScale);
+
+        this.ctx.fillStyle = "#321";
+        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
+
+        var playerMagnification = 10;
+
+        var currentPlayer = this.world.players[this.currentPlayerName];
+
+        for (var _name in this.world.players) {
+          var player = this.world.players[_name];
+          if (player.alive) {
+            switch (player.element) {
+              case "water":
+                this.ctx.fillStyle = "#cff";break;
+              case "flame":
+                this.ctx.fillStyle = "#f9b422";break;
+              case "earth":
+                this.ctx.fillStyle = "#37e408";break;
+            }
+            this.ctx.beginPath();
+            this.ctx.arc(player.x, player.y, player.radius * playerMagnification, 0, 2 * Math.PI, false);
+            this.ctx.fill();
+          }
+        }
+
+        // show camera outline
+        this.ctx.strokeStyle = "#fff";
+        this.ctx.lineWidth = 16;
+        this.ctx.strokeRect(viewportX - CANVAS_WIDTH / 2, viewportY - CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        this.ctx.restore();
       },
       writable: true,
       configurable: true
@@ -409,7 +465,7 @@ module.exports = (function () {
             break;
         }
         this.ctx.beginPath();
-        this.ctx.arc(x, y, player.radius / this.scale, 0, 2 * Math.PI, false);
+        this.ctx.arc(x, y, player.radius, 0, 2 * Math.PI, false);
         this.ctx.fill();
         this.ctx.stroke();
 
@@ -474,7 +530,7 @@ module.exports = (function () {
                 player.y += this.world.rules.map_height;
               }
               if (player.y > this.world.rules.map_height) {
-                player.y += this.world.rules.map_height;
+                player.y -= this.world.rules.map_height;
               }
             }
           }
@@ -488,10 +544,6 @@ module.exports = (function () {
 
   return Renderer;
 })();
-
-// if player is visible in map
-// offset x and y
-//drawPlayer(player, x, y);
 
 },{}],5:[function(require,module,exports){
 "use strict";

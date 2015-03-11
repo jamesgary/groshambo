@@ -5,6 +5,10 @@ let landcast = "rgba(253, 236, 144, 0.9)";
 var CANVAS_WIDTH = 800;
 var CANVAS_HEIGHT = 600;
 
+var MINIMAP_PADDING = 10;
+var MINIMAP_WIDTH = 200;
+var MINIMAP_HEIGHT = 150;
+
 module.exports = class Renderer {
   constructor(canvas, leaderboard) {
     this.canvas = canvas;
@@ -51,7 +55,6 @@ module.exports = class Renderer {
     this.world = world;
     this.currentPlayerName = currentPlayerName;
     console.log(this.world.rules)
-    this.scale = CANVAS_WIDTH / this.world.rules.map_width;
 
     this.ctx.font = "800 9pt Arial";
     this.ctx.textAlign = "center";
@@ -83,38 +86,91 @@ module.exports = class Renderer {
       let bgWidth = this.patterns.sandBg.width;
       let bgHeight = this.patterns.sandBg.height;
       let currentPlayer = this.world.players[this.currentPlayerName];
-      let x, y;
+      let cameraX, cameraY, bgX, bgY;
       if (currentPlayer) {
-        x = currentPlayer.x;
-        y = currentPlayer.y;
+        cameraX = currentPlayer.x;
+        cameraY = currentPlayer.y;
       } else {
         // place camera in center of map
-        x = this.world.rules.map_width / 2;
-        y = this.world.rules.map_height / 2;
+        cameraX = this.world.rules.map_width / 2;
+        cameraY = this.world.rules.map_height / 2;
       }
-      x %= bgWidth
-      y %= bgHeight
 
+      bgX = cameraX % bgWidth;
+      bgY = cameraY % bgHeight;
       this.ctx.fillStyle = this.patterns.sandBg.pattern;
-      this.ctx.translate(-x, -y);
+      this.ctx.translate(-bgX, -bgY);
       this.ctx.fillRect(0, 0, CANVAS_WIDTH * 2, CANVAS_HEIGHT * 2);
-      this.ctx.translate(x, y);
+      this.ctx.translate(bgX, bgY);
 
       for (let name in this.world.players) {
         let player = this.world.players[name];
         if (player.alive && player != currentPlayer) {
-          // if player is visible in map
-          // offset x and y
-          //drawPlayer(player, x, y);
+          // TODO check if player is visible in map, don't bother if not
+          let xDelta = (player.x - currentPlayer.x);
+          let yDelta = (player.y - currentPlayer.y);
+
+          let x = (xDelta) + (CANVAS_WIDTH / 2);
+          let y = (yDelta) + (CANVAS_HEIGHT / 2);
+          this.drawPlayer(player, x, y);
         }
       }
       if (currentPlayer && currentPlayer.alive) {
         this.drawPlayer(currentPlayer, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
       }
+      this.renderMinimap(cameraX, cameraY);
       this.deadReckon()
     }
 
     requestAnimationFrame(() => this.render());
+  }
+
+  renderMinimap(viewportX, viewportY) {
+    // scale to minimap position/size
+    this.ctx.save();
+    this.ctx.translate(
+      MINIMAP_PADDING,
+      (CANVAS_HEIGHT - MINIMAP_PADDING) - MINIMAP_HEIGHT
+    );
+    let minimapScale = (MINIMAP_WIDTH / this.world.rules.map_width)
+    this.ctx.scale(minimapScale, minimapScale);
+
+    this.ctx.fillStyle = "#321";
+    this.ctx.fillRect(
+      0, 0,
+      this.world.rules.map_width,
+      this.world.rules.map_height
+    );
+
+    let playerMagnification = 10;
+
+    let currentPlayer = this.world.players[this.currentPlayerName];
+
+    for (let name in this.world.players) {
+      let player = this.world.players[name];
+      if (player.alive) {
+        switch(player.element) {
+          case 'water': this.ctx.fillStyle = '#cff'; break;
+          case 'flame': this.ctx.fillStyle = '#f9b422'; break;
+          case 'earth': this.ctx.fillStyle = '#37e408'; break;
+        }
+        this.ctx.beginPath();
+        this.ctx.arc(player.x, player.y, player.radius * playerMagnification, 0, 2 * Math.PI, false);
+        this.ctx.fill();
+      }
+    }
+
+    // show camera outline
+    this.ctx.strokeStyle = "#fff";
+    this.ctx.lineWidth = 16;
+    this.ctx.strokeRect(
+      viewportX - (CANVAS_WIDTH / 2),
+      viewportY - (CANVAS_HEIGHT / 2),
+      CANVAS_WIDTH,
+      CANVAS_HEIGHT
+    );
+
+    this.ctx.restore();
   }
 
   drawPlayer(player, x, y) {
@@ -136,7 +192,7 @@ module.exports = class Renderer {
         break;
     }
     this.ctx.beginPath();
-    this.ctx.arc(x, y, player.radius / this.scale, 0, 2 * Math.PI, false);
+    this.ctx.arc(x, y, player.radius, 0, 2 * Math.PI, false);
     this.ctx.fill();
     this.ctx.stroke();
 
@@ -183,7 +239,7 @@ module.exports = class Renderer {
           if (player.x < 0) { player.x += this.world.rules.map_width }
           if (player.x > this.world.rules.map_width) { player.x -= this.world.rules.map_width }
           if (player.y < 0) { player.y += this.world.rules.map_height }
-          if (player.y > this.world.rules.map_height) { player.y += this.world.rules.map_height }
+          if (player.y > this.world.rules.map_height) { player.y -= this.world.rules.map_height }
         }
       }
       this.world.updatedAt = now;
