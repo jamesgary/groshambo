@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	RADIUS = 8
+	RADIUS = 1
 )
 
 type Player struct {
@@ -80,9 +80,25 @@ func (p *Player) Travel(duration time.Duration) {
 	p.Y += (p.YSpeed * t) + (0.5 * y_a * t * t)
 	p.XSpeed += (x_a * t)
 	p.YSpeed += (y_a * t)
+
+	// wrap!
+	if p.X < 0 {
+		p.X += MAP_WIDTH
+	}
+	if p.X > MAP_WIDTH {
+		p.X -= MAP_WIDTH
+	}
+	if p.Y < 0 {
+		p.Y += MAP_HEIGHT
+	}
+	if p.Y > MAP_HEIGHT {
+		p.Y += MAP_HEIGHT
+	}
+
 }
 
 func (p *Player) collidesWith(p2 *Player) bool {
+	// TODO handle wrapping
 	distance := math.Sqrt(math.Pow(p.X-p2.X, 2) + math.Pow(p.Y-p2.Y, 2))
 	return distance < p.Radius+p2.Radius
 }

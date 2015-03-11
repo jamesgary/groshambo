@@ -20,6 +20,10 @@ let world = {
 let conn, renderer, currentPlayerName;
 
 $(function() {
+  renderer = new Renderer(
+    $("canvas[role=renderer]")[0],
+    $("[role=leaderboard]")
+  );
   Welcome.generateNamePicker(HOST, startGame);
 });
 
@@ -43,12 +47,7 @@ function startGame(name, nameId) {
       }
 
       $("[role=game-container]").show();
-      renderer = new Renderer(
-        $("canvas[role=renderer]")[0],
-        $("[role=leaderboard]"),
-        world
-      );
-      renderer.start();
+      renderer.start(world, currentPlayerName);
 
       Input.listenToPlayerInput(movementInput, function() {
         conn.send(JSON.stringify(movementInput));

@@ -108,6 +108,7 @@ h1 {
   text-align: center;
   vertical-align: top; }
   .game-container canvas {
+    background: #000;
     display: inline-block;
     margin: 0; }
   .game-container .leaderboard {

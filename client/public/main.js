@@ -25,6 +25,7 @@ var conn = undefined,
     currentPlayerName = undefined;
 
 $(function () {
+  renderer = new Renderer($("canvas[role=renderer]")[0], $("[role=leaderboard]"));
   Welcome.generateNamePicker(HOST, startGame);
 });
 
@@ -51,8 +52,7 @@ function startGame(name, nameId) {
       };
 
       $("[role=game-container]").show();
-      renderer = new Renderer($("canvas[role=renderer]")[0], $("[role=leaderboard]"), world);
-      renderer.start();
+      renderer.start(world, currentPlayerName);
 
       Input.listenToPlayerInput(movementInput, function () {
         conn.send(JSON.stringify(movementInput));
@@ -230,28 +230,71 @@ var water = "rgba(10, 100, 255, 1.0)";
 var land = "rgba(253, 236, 144, 1)";
 var landcast = "rgba(253, 236, 144, 0.9)";
 
+var CANVAS_WIDTH = 800;
+var CANVAS_HEIGHT = 600;
+
 module.exports = (function () {
-  function Renderer(canvas, leaderboard, world) {
+  function Renderer(canvas, leaderboard) {
     _classCallCheck(this, Renderer);
 
-    $(canvas).attr("width", world.rules.map_width);
-    $(canvas).attr("height", world.rules.map_height);
-    $(leaderboard).css("height", "" + world.rules.map_height + "px");
-
     this.canvas = canvas;
+    this.leaderboard = leaderboard;
     this.ctx = this.canvas.getContext("2d");
-    this.world = world;
+    this.images = {};
+    this.patterns = {};
+
+    this.imagesLoaded = false;
+    this.loadImages({
+      // note: dimensions be common denominators of canvas height/width
+      // and map height/width in order for wrapping to work
+      sandBg: "/images/sand_bg.png"
+    });
+
+    $(this.canvas).attr("width", CANVAS_WIDTH);
+    $(this.canvas).attr("height", CANVAS_HEIGHT);
+    $(this.leaderboard).css("height", "" + CANVAS_HEIGHT + "px");
   }
 
   _prototypeProperties(Renderer, null, {
+    loadImages: {
+      value: function loadImages(sources) {
+        var _this = this;
+
+        var loadedImages = 0;
+        var numImages = Object.keys(sources).length;
+
+        for (var name in sources) {
+          (function (name) {
+            _this.images[name] = new Image();
+            _this.images[name].onload = function () {
+              _this.patterns[name] = {
+                pattern: _this.ctx.createPattern(_this.images[name], "repeat"),
+                width: _this.images[name].width,
+                height: _this.images[name].height
+              };
+              loadedImages++;
+              if (loadedImages == numImages) {
+                // we're done loading!
+                _this.imagesLoaded = true;
+              }
+            };
+            _this.images[name].src = sources[name];
+          })(name);
+        }
+      },
+      writable: true,
+      configurable: true
+    },
     start: {
-      value: function start() {
-        this.render();
-        this.ctx.fillStyle = land;
+      value: function start(world, currentPlayerName) {
+        this.world = world;
+        this.currentPlayerName = currentPlayerName;
         console.log(this.world.rules);
-        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
+        this.scale = CANVAS_WIDTH / this.world.rules.map_width;
+
         this.ctx.font = "800 9pt Arial";
         this.ctx.textAlign = "center";
+        this.render();
       },
       writable: true,
       configurable: true
@@ -298,7 +341,7 @@ module.exports = (function () {
           }
         }
 
-        $("[role=leaderboard-players]").html(html);
+        this.leaderboard.find("[role=leaderboard-players]").html(html);
       },
       writable: true,
       configurable: true
@@ -307,49 +350,77 @@ module.exports = (function () {
       value: function render() {
         var _this = this;
 
-        this.ctx.fillStyle = land;
-        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
-
-        for (var _name in this.world.players) {
-          var player = this.world.players[_name];
-          if (player.alive) {
-            switch (player.element) {
-              case "water":
-                this.ctx.fillStyle = "#cff";
-                this.ctx.strokeStyle = "#5ac";
-                this.ctx.lineWidth = 1;
-                break;
-              case "flame":
-                this.ctx.fillStyle = "#E9F422";
-                this.ctx.strokeStyle = "#AB0505";
-                this.ctx.lineWidth = 1;
-                break;
-              case "earth":
-                this.ctx.fillStyle = "#37e408";
-                this.ctx.strokeStyle = "#91770e";
-                this.ctx.lineWidth = 2;
-                break;
-            }
-            this.ctx.beginPath();
-            this.ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI, false);
-            this.ctx.fill();
-            this.ctx.stroke();
-
-            var _name2 = player.name;
-            var nameX = player.x;
-            var nameY = player.y + 25;
-            this.ctx.lineWidth = 2;
-            this.ctx.strokeStyle = "#fff";
-            this.ctx.strokeText(_name2, nameX, nameY);
-            this.ctx.fillStyle = "#000";
-            this.ctx.fillText(_name2, nameX, nameY);
+        if (this.imagesLoaded) {
+          var bgWidth = this.patterns.sandBg.width;
+          var bgHeight = this.patterns.sandBg.height;
+          var currentPlayer = this.world.players[this.currentPlayerName];
+          var x = undefined,
+              y = undefined;
+          if (currentPlayer) {
+            x = currentPlayer.x;
+            y = currentPlayer.y;
+          } else {
+            // place camera in center of map
+            x = this.world.rules.map_width / 2;
+            y = this.world.rules.map_height / 2;
           }
+          x %= bgWidth;
+          y %= bgHeight;
+
+          this.ctx.fillStyle = this.patterns.sandBg.pattern;
+          this.ctx.translate(-x, -y);
+          this.ctx.fillRect(0, 0, CANVAS_WIDTH * 2, CANVAS_HEIGHT * 2);
+          this.ctx.translate(x, y);
+
+          for (var _name in this.world.players) {
+            var player = this.world.players[_name];
+            if (player.alive && player != currentPlayer) {}
+          }
+          if (currentPlayer && currentPlayer.alive) {
+            this.drawPlayer(currentPlayer, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+          }
+          this.deadReckon();
         }
-        this.deadReckon();
 
         requestAnimationFrame(function () {
           return _this.render();
         });
+      },
+      writable: true,
+      configurable: true
+    },
+    drawPlayer: {
+      value: function drawPlayer(player, x, y) {
+        switch (player.element) {
+          case "water":
+            this.ctx.fillStyle = "#cff";
+            this.ctx.strokeStyle = "#5ac";
+            this.ctx.lineWidth = 1;
+            break;
+          case "flame":
+            this.ctx.fillStyle = "#E9F422";
+            this.ctx.strokeStyle = "#AB0505";
+            this.ctx.lineWidth = 1;
+            break;
+          case "earth":
+            this.ctx.fillStyle = "#37e408";
+            this.ctx.strokeStyle = "#91770e";
+            this.ctx.lineWidth = 2;
+            break;
+        }
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, player.radius / this.scale, 0, 2 * Math.PI, false);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        var name = player.name;
+        var nameX = x;
+        var nameY = y + 25;
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = "#fff";
+        this.ctx.strokeText(name, nameX, nameY);
+        this.ctx.fillStyle = "#000";
+        this.ctx.fillText(name, nameX, nameY);
       },
       writable: true,
       configurable: true
@@ -391,6 +462,20 @@ module.exports = (function () {
               player.y += player.y_speed * t + 0.5 * y_a * t * t;
               player.x_speed += x_a * t;
               player.y_speed += y_a * t;
+
+              // wrap!
+              if (player.x < 0) {
+                player.x += this.world.rules.map_width;
+              }
+              if (player.x > this.world.rules.map_width) {
+                player.x -= this.world.rules.map_width;
+              }
+              if (player.y < 0) {
+                player.y += this.world.rules.map_height;
+              }
+              if (player.y > this.world.rules.map_height) {
+                player.y += this.world.rules.map_height;
+              }
             }
           }
           this.world.updatedAt = now;
@@ -403,6 +488,10 @@ module.exports = (function () {
 
   return Renderer;
 })();
+
+// if player is visible in map
+// offset x and y
+//drawPlayer(player, x, y);
 
 },{}],5:[function(require,module,exports){
 "use strict";
