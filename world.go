@@ -12,7 +12,7 @@ const (
 )
 
 type World struct {
-	Players []*Player `json:"players"`
+	Players map[string]*Player `json:"players"`
 
 	rules       Rules
 	currentTime time.Time
@@ -27,7 +27,7 @@ type Rules struct {
 
 func NewWorld() *World {
 	return &World{
-		Players: []*Player{},
+		Players: map[string]*Player{},
 
 		currentTime: time.Now(),
 		rules: Rules{
@@ -52,18 +52,26 @@ func (w *World) Tick() {
 }
 
 func (w *World) checkforCollisions() {
+	// need to convert map to slice to iterate and avoid unnecessary checks
+	players := []*Player{}
+	for _, player := range w.Players {
+		if player.Alive {
+			players = append(players, player)
+		}
+	}
+
 	i := 0
-	for i < len(w.Players) {
-		playerA := w.Players[i]
+	for i < len(players) {
+		p1 := players[i]
 		k := i + 1
-		for k < len(w.Players) {
-			playerB := w.Players[k]
-			if playerA.collidesWith(playerB) {
-				if playerA.canEat(playerB) {
-					playerB.Alive = false
+		for k < len(players) {
+			p2 := players[k]
+			if p1.collidesWith(p2) {
+				if p1.canEat(p2) {
+					p1.Eat(p2)
 				}
-				if playerB.canEat(playerA) {
-					playerA.Alive = false
+				if p2.canEat(p1) {
+					p2.Eat(p1)
 				}
 			}
 			k++
@@ -73,16 +81,9 @@ func (w *World) checkforCollisions() {
 }
 
 func (w *World) AddPlayer(player *Player) {
-	w.Players = append(w.Players, player)
+	w.Players[player.Name] = player
 }
 
 func (w *World) RemovePlayer(player *Player) {
-	for i, p := range w.Players {
-		if p == player {
-			copy(w.Players[i:], w.Players[i+1:])     // shift
-			w.Players[len(w.Players)-1] = nil        // remove reference
-			w.Players = w.Players[:len(w.Players)-1] // reslice
-			return
-		}
-	}
+	delete(w.Players, player.Name)
 }

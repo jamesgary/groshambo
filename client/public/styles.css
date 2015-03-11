@@ -103,9 +103,35 @@ h1 {
       font-weight: 400;
       color: #3BAB15; }
 
-canvas {
-  display: block;
-  margin: 0 auto; }
+.game-container {
+  font-size: 0;
+  text-align: center;
+  vertical-align: top; }
+  .game-container canvas {
+    display: inline-block;
+    margin: 0; }
+  .game-container .leaderboard {
+    background: #333;
+    color: #fff;
+    display: inline-block;
+    font-size: 16px;
+    margin: 0;
+    padding: 0 20px;
+    vertical-align: top;
+    width: 200px; }
+    .game-container .leaderboard h2 {
+      font-size: 24px;
+      margin: 14px 0 4px; }
+    .game-container .leaderboard .player-score-container {
+      clear: both;
+      overflow: hidden;
+      padding: 6px 0; }
+      .game-container .leaderboard .player-score-container:not(:first-of-type) {
+        border-top: 1px solid gray; }
+      .game-container .leaderboard .player-score-container .player {
+        float: left; }
+      .game-container .leaderboard .player-score-container .score {
+        float: right; }
 
 .hidden {
   display: none; }

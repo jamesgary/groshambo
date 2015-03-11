@@ -3,9 +3,10 @@ let land = "rgba(253, 236, 144, 1)";
 let landcast = "rgba(253, 236, 144, 0.9)";
 
 module.exports = class Renderer {
-  constructor(canvas, world) {
+  constructor(canvas, leaderboard, world) {
     $(canvas).attr('width', world.rules.map_width);
     $(canvas).attr('height', world.rules.map_height);
+    $(leaderboard).css("height", `${world.rules.map_height}px`);
 
     this.canvas = canvas;
     this.ctx = this.canvas.getContext("2d");
@@ -19,14 +20,34 @@ module.exports = class Renderer {
     this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
     this.ctx.font = "800 9pt Arial";
     this.ctx.textAlign = "center";
+  }
 
+  updateLeaderboard() {
+    let html = "";
+    let sortedPlayers = [];
+    for (let name in this.world.players) {
+      let player = this.world.players[name];
+      sortedPlayers.push(player);
+    }
+
+    // sort descending
+    sortedPlayers.sort(function(a, b) { return b.points - a.points });
+
+    for (let player of sortedPlayers) {
+      html += `<div class="player-score-container">`;
+      html += `<span class="player">${player.name}</span>`;
+      html += `<span class="score">${player.points}</span>`;
+      html += `</div>`;
+    }
+    $("[role=leaderboard-players]").html(html);
   }
 
   render() {
     this.ctx.fillStyle = land;
     this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
-    for (let player of this.world.players) {
+    for (let name in this.world.players) {
+      let player = this.world.players[name];
       if (player.alive) {
         switch(player.element) {
           case 'water':
@@ -74,7 +95,8 @@ module.exports = class Renderer {
       let a = this.world.rules.acceleration;
       let friction = this.world.rules.friction;
 
-      for (let player of this.world.players) {
+      for (let name in this.world.players) {
+        let player = this.world.players[name];
         if (player.alive) {
           player.dr = true; // for debugging dead reckoning
           let x_a = 0;

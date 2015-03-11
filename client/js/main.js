@@ -15,15 +15,16 @@ let movementInput = {
 };
 let world = {
   updatedAt: Date.now(),
-  players: []
+  players: {}
 };
-let conn, renderer;
+let conn, renderer, currentPlayerName;
 
 $(function() {
   Welcome.generateNamePicker(HOST, startGame);
 });
 
-function startGame(nameId) {
+function startGame(name, nameId) {
+  currentPlayerName = name;
   conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
   conn.onopen = function() {
     showElementChooser();
@@ -33,7 +34,7 @@ function startGame(nameId) {
     let msg = JSON.parse(evt.data);
 
     // TODO better msg type detection
-    if (msg.friction) { // must be a rules update
+    if (msg.friction) { // must be a rules update, i.e. a new game
       world.rules = {
         friction: msg.friction,
         acceleration: msg.acceleration,
@@ -41,7 +42,12 @@ function startGame(nameId) {
         map_height: msg.map_height
       }
 
-      renderer = new Renderer($("canvas[role=game]")[0], world);
+      $("[role=game-container]").show();
+      renderer = new Renderer(
+        $("canvas[role=renderer]")[0],
+        $("[role=leaderboard]"),
+        world
+      );
       renderer.start();
 
       Input.listenToPlayerInput(movementInput, function() {
@@ -50,8 +56,32 @@ function startGame(nameId) {
     }
 
     if (msg.players) { // must be a gamestate update
+      let shouldUpdateLeaderboard;
       world.updatedAt = Date.now();
+      for (let name in msg.players) {
+        let serverPlayer = msg.players[name];
+        let clientPlayer = world.players[name];
+        if (clientPlayer) {
+          // check for changes in existing players
+          if (clientPlayer.points != serverPlayer.points) {
+            shouldUpdateLeaderboard = true;
+          }
+          if ((currentPlayerName == name) &&
+            (clientPlayer.alive) &&
+            (!serverPlayer.alive)) {
+            // player died!
+            showElementChooser();
+          }
+        } else {
+          // new players should go on leaderboard
+          shouldUpdateLeaderboard = true;
+        }
+      }
+      // refresh all players
       world.players = msg.players;
+      if (shouldUpdateLeaderboard) {
+        renderer.updateLeaderboard();
+      }
     }
   };
 }

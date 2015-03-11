@@ -13,7 +13,7 @@ module.exports = {
       $("[role=name]").click(function(evt) {
         let nameData = $(evt.target).data();
         $("[role=welcome]").hide();
-        callback(nameData.id);
+        callback(nameData.name, nameData.id);
       });
     });
   }

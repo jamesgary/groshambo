@@ -43,7 +43,14 @@
     </div>
   </div>
 
-  <canvas role="game"></canvas>
+  <div role="game-container" class="game-container hidden">
+    <canvas role="renderer"></canvas>
+    <div class="leaderboard" role="leaderboard">
+      <h2>Leaderboard</h2>
+      <div role="leaderboard-players">
+      </div>
+    </div>
+  </div>
 
   <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
   <script src="/main.js"></script>

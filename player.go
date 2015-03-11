@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	RADIUS = 10
+	RADIUS = 8
 )
 
 type Player struct {
@@ -91,4 +91,9 @@ func (p *Player) canEat(p2 *Player) bool {
 	return p.Element == "flame" && p2.Element == "earth" ||
 		p.Element == "earth" && p2.Element == "water" ||
 		p.Element == "water" && p2.Element == "flame"
+}
+
+func (p *Player) Eat(p2 *Player) {
+	p2.Alive = false
+	p.Points++
 }

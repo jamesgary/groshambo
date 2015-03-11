@@ -18,16 +18,18 @@ var movementInput = {
 };
 var world = {
   updatedAt: Date.now(),
-  players: []
+  players: {}
 };
 var conn = undefined,
-    renderer = undefined;
+    renderer = undefined,
+    currentPlayerName = undefined;
 
 $(function () {
   Welcome.generateNamePicker(HOST, startGame);
 });
 
-function startGame(nameId) {
+function startGame(name, nameId) {
+  currentPlayerName = name;
   conn = new WebSocket("ws://" + HOST + "/ws?name_id=" + nameId);
   conn.onopen = function () {
     showElementChooser();
@@ -40,7 +42,7 @@ function startGame(nameId) {
 
     // TODO better msg type detection
     if (msg.friction) {
-      // must be a rules update
+      // must be a rules update, i.e. a new game
       world.rules = {
         friction: msg.friction,
         acceleration: msg.acceleration,
@@ -48,7 +50,8 @@ function startGame(nameId) {
         map_height: msg.map_height
       };
 
-      renderer = new Renderer($("canvas[role=game]")[0], world);
+      $("[role=game-container]").show();
+      renderer = new Renderer($("canvas[role=renderer]")[0], $("[role=leaderboard]"), world);
       renderer.start();
 
       Input.listenToPlayerInput(movementInput, function () {
@@ -58,8 +61,30 @@ function startGame(nameId) {
 
     if (msg.players) {
       // must be a gamestate update
+      var shouldUpdateLeaderboard = undefined;
       world.updatedAt = Date.now();
+      for (var _name in msg.players) {
+        var serverPlayer = msg.players[_name];
+        var clientPlayer = world.players[_name];
+        if (clientPlayer) {
+          // check for changes in existing players
+          if (clientPlayer.points != serverPlayer.points) {
+            shouldUpdateLeaderboard = true;
+          }
+          if (currentPlayerName == _name && clientPlayer.alive && !serverPlayer.alive) {
+            // player died!
+            showElementChooser();
+          }
+        } else {
+          // new players should go on leaderboard
+          shouldUpdateLeaderboard = true;
+        }
+      }
+      // refresh all players
       world.players = msg.players;
+      if (shouldUpdateLeaderboard) {
+        renderer.updateLeaderboard();
+      }
     }
   };
 }
@@ -206,11 +231,12 @@ var land = "rgba(253, 236, 144, 1)";
 var landcast = "rgba(253, 236, 144, 0.9)";
 
 module.exports = (function () {
-  function Renderer(canvas, world) {
+  function Renderer(canvas, leaderboard, world) {
     _classCallCheck(this, Renderer);
 
     $(canvas).attr("width", world.rules.map_width);
     $(canvas).attr("height", world.rules.map_height);
+    $(leaderboard).css("height", "" + world.rules.map_height + "px");
 
     this.canvas = canvas;
     this.ctx = this.canvas.getContext("2d");
@@ -230,56 +256,32 @@ module.exports = (function () {
       writable: true,
       configurable: true
     },
-    render: {
-      value: function render() {
-        var _this = this;
+    updateLeaderboard: {
+      value: function updateLeaderboard() {
+        var html = "";
+        var sortedPlayers = [];
+        for (var _name in this.world.players) {
+          var player = this.world.players[_name];
+          sortedPlayers.push(player);
+        }
 
-        this.ctx.fillStyle = land;
-        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
+        // sort descending
+        sortedPlayers.sort(function (a, b) {
+          return b.points - a.points;
+        });
 
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
 
         try {
-          for (var _iterator = this.world.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          for (var _iterator = sortedPlayers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
             var player = _step.value;
 
-            if (player.alive) {
-              switch (player.element) {
-                case "water":
-                  this.ctx.fillStyle = "#cff";
-                  this.ctx.strokeStyle = "#5ac";
-                  this.ctx.lineWidth = 1;
-                  if (_iterator["return"]) _iterator["return"]();
-                  break;
-                case "flame":
-                  this.ctx.fillStyle = "#E9F422";
-                  this.ctx.strokeStyle = "#AB0505";
-                  this.ctx.lineWidth = 1;
-                  if (_iterator["return"]) _iterator["return"]();
-                  break;
-                case "earth":
-                  this.ctx.fillStyle = "#37e408";
-                  this.ctx.strokeStyle = "#91770e";
-                  this.ctx.lineWidth = 2;
-                  if (_iterator["return"]) _iterator["return"]();
-                  break;
-              }
-              this.ctx.beginPath();
-              this.ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI, false);
-              this.ctx.fill();
-              this.ctx.stroke();
-
-              var _name = player.name;
-              var nameX = player.x;
-              var nameY = player.y + 25;
-              this.ctx.lineWidth = 2;
-              this.ctx.strokeStyle = "#fff";
-              this.ctx.strokeText(_name, nameX, nameY);
-              this.ctx.fillStyle = "#000";
-              this.ctx.fillText(_name, nameX, nameY);
-            }
+            html += "<div class=\"player-score-container\">";
+            html += "<span class=\"player\">" + player.name + "</span>";
+            html += "<span class=\"score\">" + player.points + "</span>";
+            html += "</div>";
           }
         } catch (err) {
           _didIteratorError = true;
@@ -296,6 +298,53 @@ module.exports = (function () {
           }
         }
 
+        $("[role=leaderboard-players]").html(html);
+      },
+      writable: true,
+      configurable: true
+    },
+    render: {
+      value: function render() {
+        var _this = this;
+
+        this.ctx.fillStyle = land;
+        this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
+
+        for (var _name in this.world.players) {
+          var player = this.world.players[_name];
+          if (player.alive) {
+            switch (player.element) {
+              case "water":
+                this.ctx.fillStyle = "#cff";
+                this.ctx.strokeStyle = "#5ac";
+                this.ctx.lineWidth = 1;
+                break;
+              case "flame":
+                this.ctx.fillStyle = "#E9F422";
+                this.ctx.strokeStyle = "#AB0505";
+                this.ctx.lineWidth = 1;
+                break;
+              case "earth":
+                this.ctx.fillStyle = "#37e408";
+                this.ctx.strokeStyle = "#91770e";
+                this.ctx.lineWidth = 2;
+                break;
+            }
+            this.ctx.beginPath();
+            this.ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI, false);
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            var _name2 = player.name;
+            var nameX = player.x;
+            var nameY = player.y + 25;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = "#fff";
+            this.ctx.strokeText(_name2, nameX, nameY);
+            this.ctx.fillStyle = "#000";
+            this.ctx.fillText(_name2, nameX, nameY);
+          }
+        }
         this.deadReckon();
 
         requestAnimationFrame(function () {
@@ -315,56 +364,35 @@ module.exports = (function () {
           var a = this.world.rules.acceleration;
           var friction = this.world.rules.friction;
 
-          var _iteratorNormalCompletion = true;
-          var _didIteratorError = false;
-          var _iteratorError = undefined;
-
-          try {
-            for (var _iterator = this.world.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-              var player = _step.value;
-
-              if (player.alive) {
-                player.dr = true; // for debugging dead reckoning
-                var x_a = 0;
-                var y_a = 0;
-                if (player.going_up) {
-                  y_a = -a;
-                }
-                if (player.going_down) {
-                  y_a = a;
-                }
-                if (player.going_left) {
-                  x_a = -a;
-                }
-                if (player.going_right) {
-                  x_a = a;
-                }
-
-                // may not be correct algorithm
-                x_a -= friction * player.x_speed;
-                y_a -= friction * player.y_speed;
-
-                player.x += player.x_speed * t + 0.5 * x_a * t * t;
-                player.y += player.y_speed * t + 0.5 * y_a * t * t;
-                player.x_speed += x_a * t;
-                player.y_speed += y_a * t;
+          for (var _name in this.world.players) {
+            var player = this.world.players[_name];
+            if (player.alive) {
+              player.dr = true; // for debugging dead reckoning
+              var x_a = 0;
+              var y_a = 0;
+              if (player.going_up) {
+                y_a = -a;
               }
-            }
-          } catch (err) {
-            _didIteratorError = true;
-            _iteratorError = err;
-          } finally {
-            try {
-              if (!_iteratorNormalCompletion && _iterator["return"]) {
-                _iterator["return"]();
+              if (player.going_down) {
+                y_a = a;
               }
-            } finally {
-              if (_didIteratorError) {
-                throw _iteratorError;
+              if (player.going_left) {
+                x_a = -a;
               }
+              if (player.going_right) {
+                x_a = a;
+              }
+
+              // may not be correct algorithm
+              x_a -= friction * player.x_speed;
+              y_a -= friction * player.y_speed;
+
+              player.x += player.x_speed * t + 0.5 * x_a * t * t;
+              player.y += player.y_speed * t + 0.5 * y_a * t * t;
+              player.x_speed += x_a * t;
+              player.y_speed += y_a * t;
             }
           }
-
           this.world.updatedAt = now;
         }
       },
@@ -396,7 +424,7 @@ module.exports = {
       $("[role=name]").click(function (evt) {
         var nameData = $(evt.target).data();
         $("[role=welcome]").hide();
-        callback(nameData.id);
+        callback(nameData.name, nameData.id);
       });
     });
   }
