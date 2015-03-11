@@ -40,113 +40,112 @@ html {
   background: url('/images/congruent_pentagon.png');
   font-family: 'Nunito', Arial, serif;
   font-weight: 300;
+}
 
-  h1 {
-    font-family: 'Nunito', Arial, serif;
-    font-weight: 700;
-    margin: 0;
+h1 {
+  font-family: 'Nunito', Arial, serif;
+  font-weight: 700;
+  margin: 0;
+}
+
+.welcome {
+  @include modal;
+
+  a {
+    background: #dfd;
+    border-radius: 3px;
+    border: 1px #8b8 solid;
+    cursor: pointer;
+    display: inline-block;
+    margin: 5px;
+    padding: 5px;
+    width: 150px;
+
+    &.generate-more {
+      width: 200px;
+    }
+
+    &:hover {
+      background: #cec;
+    }
+
+    &:active {
+      background: #bdb;
+    }
   }
+}
 
-  .welcome {
-    @include modal;
+.element-chooser {
+  @include modal;
+  position: absolute;
+  margin: 20px auto;
+  left: 0;
+  right: 0;
 
-    a {
-      background: #dfd;
-      border-radius: 3px;
-      border: 1px #8b8 solid;
-      cursor: pointer;
-      display: inline-block;
-      margin: 5px;
-      padding: 5px;
-      width: 150px;
+  .element {
+    border-radius: 3px;
+    border-size: 1px;
+    border-style: solid;
+    cursor: pointer;
+    display: inline-block;
+    margin: 5px;
+    padding: 5px;
+    width: 100px;
+    font-weight: 400;
 
-      &.generate-more {
-        width: 200px;
-      }
+    &.water {
+      border-color: $water-border;
+      background: $water-background;
+      color: $water-color;
 
       &:hover {
-        background: #cec;
+        border-color: darken($water-border, 7%);
+        background: darken($water-background, 7%);
+        color: darken($water-color, 7%);
       }
+    }
 
-      &:active {
-        background: #bdb;
+    &.flame {
+      border-color: $flame-border;
+      background: $flame-background;
+      color: $flame-color;
+
+      &:hover {
+        border-color: darken($flame-border, 5%);
+        background: darken($flame-background, 5%);
+        color: darken($flame-color, 5%);
+      }
+    }
+
+    &.earth {
+      border-color: $earth-border;
+      background: $earth-background;
+      color: $earth-color;
+
+      &:hover {
+        border-color: darken($earth-border, 10%);
+        background: darken($earth-background, 5%);
       }
     }
   }
 
-  .element-chooser {
-    @include modal;
-    position: absolute;
-    margin: 20px auto;
-    left: 0;
-    right: 0;
-
-    .element {
-      border-radius: 3px;
-      border-size: 1px;
-      border-style: solid;
-      cursor: pointer;
-      display: inline-block;
-      margin: 5px;
-      padding: 5px;
-      width: 100px;
-      font-weight: 400;
-
-      &.water {
-        border-color: $water-border;
-        background: $water-background;
-        color: $water-color;
-
-        &:hover {
-          border-color: darken($water-border, 7%);
-          background: darken($water-background, 7%);
-          color: darken($water-color, 7%);
-        }
-      }
-
-      &.flame {
-        border-color: $flame-border;
-        background: $flame-background;
-        color: $flame-color;
-
-        &:hover {
-          border-color: darken($flame-border, 5%);
-          background: darken($flame-background, 5%);
-          color: darken($flame-color, 5%);
-        }
-      }
-
-      &.earth {
-        border-color: $earth-border;
-        background: $earth-background;
-        color: $earth-color;
-
-        &:hover {
-          border-color: darken($earth-border, 10%);
-          background: darken($earth-background, 5%);
-        }
-      }
+  .explanations {
+    height: 50px;
+    position: relative;
+    p {
+      position: absolute;
+      width: 100%;
+      text-align: center;
     }
-
-    .explanations {
-      height: 50px;
-      position: relative;
-      p {
-        position: absolute;
-        width: 100%;
-        text-align: center;
-      }
-      .flamey { font-weight: 400; color: $flamey; }
-      .watery { font-weight: 400; color: $watery; }
-      .earthy { font-weight: 400; color: $earthy; }
-    }
-
+    .flamey { font-weight: 400; color: $flamey; }
+    .watery { font-weight: 400; color: $watery; }
+    .earthy { font-weight: 400; color: $earthy; }
   }
+}
 
-  canvas {
-    display: block;
-    margin: 0 auto;
-  }
+canvas {
+  display: block;
+  margin: 0 auto;
 }
 
 .hidden {
