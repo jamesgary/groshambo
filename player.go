@@ -66,6 +66,10 @@ func (p *Player) Travel(duration time.Duration) {
 		x_a = a
 	}
 
+	// May not be correct algorithm
+	x_a -= FRICTION * p.XSpeed
+	y_a -= FRICTION * p.YSpeed
+
 	p.X += (p.XSpeed * t) + (0.5 * x_a * t * t)
 	p.Y += (p.YSpeed * t) + (0.5 * y_a * t * t)
 	p.XSpeed += (x_a * t)

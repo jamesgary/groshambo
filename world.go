@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	FRICTION     = 0.999
+	FRICTION     = 0.0005
 	ACCELERATION = 0.0004
 	MAP_WIDTH    = 800
 	MAP_HEIGHT   = 600

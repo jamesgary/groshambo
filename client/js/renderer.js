@@ -74,16 +74,21 @@ module.exports = class Renderer {
       let now = Date.now();
       let t = now - this.world.updatedAt;
       let a = this.world.rules.acceleration;
+      let friction = this.world.rules.friction;
 
       for (let player of this.world.players) {
         if (player.alive) {
-          //player.dr = true; // for debugging dead reckoning
+          player.dr = true; // for debugging dead reckoning
           let x_a = 0;
           let y_a = 0;
           if (player.going_up)    { y_a = -a }
           if (player.going_down)  { y_a =  a }
           if (player.going_left)  { x_a = -a }
           if (player.going_right) { x_a =  a }
+
+          // may not be correct algorithm
+          x_a -= friction * player.x_speed
+          y_a -= friction * player.y_speed
 
           player.x += (player.x_speed * t) + (0.5 * x_a * t * t)
           player.y += (player.y_speed * t) + (0.5 * y_a * t * t)

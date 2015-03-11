@@ -315,6 +315,7 @@ module.exports = (function () {
           var now = Date.now();
           var t = now - this.world.updatedAt;
           var a = this.world.rules.acceleration;
+          var friction = this.world.rules.friction;
 
           var _iteratorNormalCompletion = true;
           var _didIteratorError = false;
@@ -325,7 +326,7 @@ module.exports = (function () {
               var player = _step.value;
 
               if (player.alive) {
-                //player.dr = true; // for debugging dead reckoning
+                player.dr = true; // for debugging dead reckoning
                 var x_a = 0;
                 var y_a = 0;
                 if (player.going_up) {
@@ -340,6 +341,10 @@ module.exports = (function () {
                 if (player.going_right) {
                   x_a = a;
                 }
+
+                // may not be correct algorithm
+                x_a -= friction * player.x_speed;
+                y_a -= friction * player.y_speed;
 
                 player.x += player.x_speed * t + 0.5 * x_a * t * t;
                 player.y += player.y_speed * t + 0.5 * y_a * t * t;
