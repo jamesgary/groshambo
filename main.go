@@ -15,7 +15,7 @@ import (
 
 const (
 	PORT        = 8080
-	TICK_LENGTH = time.Millisecond * 30  // over 60 fps!
+	TICK_LENGTH = time.Millisecond * 30  // ~30 fps
 	PING_LENGTH = time.Millisecond * 100 // 10 fps
 )
 
@@ -146,7 +146,7 @@ func main() {
 			// send all players the updated world
 			worldJson, _ := json.Marshal(world)
 			for _, outputChan := range playerOutputChans {
-				// _ represents player
+				// _ represents player struct
 				// maybe do something differently for each player (like fog of war, or team stuff)?
 				// but for now, everyone gets same world information
 				outputChan <- worldJson

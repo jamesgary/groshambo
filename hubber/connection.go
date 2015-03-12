@@ -32,7 +32,7 @@ type Connection struct {
 	// Whenever a connection goes bad
 	DisconnectChan chan error
 
-	// The original request, cloned to avoid race condition?
+	// The original request
 	Request http.Request
 
 	ws *websocket.Conn

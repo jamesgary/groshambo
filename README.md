@@ -31,3 +31,4 @@ Play on localhost:8001.
 - Better sprites and UI
 - Switch to WebGL for graphics rendering (I like [pixi.js](www.pixijs.com))
 - Add mobile support
+- Sounds

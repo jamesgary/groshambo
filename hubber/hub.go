@@ -33,7 +33,7 @@ func NewHub(route string, port int) *Hub {
 		conn := &Connection{
 			OutputChan:     make(chan []byte, 256),
 			InputChan:      make(chan []byte, 256),
-			DisconnectChan: make(chan error),
+			DisconnectChan: make(chan error, 1), // don't block if we disconnect during setup
 			Request:        requestCopy,
 			ws:             ws,
 		}
