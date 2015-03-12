@@ -414,7 +414,7 @@ module.exports = (function () {
         this.ctx.fillStyle = "#321";
         this.ctx.fillRect(0, 0, this.world.rules.map_width, this.world.rules.map_height);
 
-        var playerMagnification = 10;
+        var playerMagnification = 2;
 
         var currentPlayer = this.world.players[this.currentPlayerName];
 

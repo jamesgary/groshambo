@@ -142,7 +142,7 @@ module.exports = class Renderer {
       this.world.rules.map_height
     );
 
-    let playerMagnification = 10;
+    let playerMagnification = 2;
 
     let currentPlayer = this.world.players[this.currentPlayerName];
 

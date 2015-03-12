@@ -7,8 +7,8 @@ import (
 const (
 	FRICTION     = 0.0005
 	ACCELERATION = 0.0004
-	MAP_WIDTH    = 8000
-	MAP_HEIGHT   = 6000
+	MAP_WIDTH    = 8000 / 5 // temporary map reduction
+	MAP_HEIGHT   = 6000 / 5 // temporary map reduction
 )
 
 type World struct {
