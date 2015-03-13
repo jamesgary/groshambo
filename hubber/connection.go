@@ -11,6 +11,10 @@ const (
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
 
+	// Time allowed to read a message from the peer.
+	// If no input from player is received, kick 'em!
+	readWait = 300 * time.Second
+
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
 )
@@ -39,6 +43,8 @@ func (c *Connection) readPump() error {
 		_, msg, err := c.ws.ReadMessage()
 		if err == nil {
 			c.InputChan <- msg
+			// player is still active, so bump their readDeadline
+			c.ws.SetReadDeadline(time.Now().Add(readWait))
 		} else {
 			return err
 		}
@@ -63,6 +69,7 @@ func (c *Connection) writePump() error {
 
 // write writes a message with the given message type and payload.
 func (c *Connection) write(payload []byte) error {
+	// we are still active, so bump our writeDeadline
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.ws.WriteMessage(websocket.TextMessage, payload)
 }

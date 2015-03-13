@@ -28,7 +28,7 @@ func NewHub(route string, port int) *Hub {
 			return
 		}
 		ws.SetReadLimit(maxMessageSize)
-		ws.SetReadDeadline(time.Time{}) // never let go, Jack
+		ws.SetReadDeadline(time.Now().Add(readWait))
 
 		conn := &Connection{
 			OutputChan:     make(chan []byte, 256),
