@@ -11,10 +11,6 @@ const (
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
 
-	// Time allowed to read a message from the peer.
-	// If no input from player is received, kick 'em!
-	readWait = 300 * time.Second // FIXME
-
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
 )

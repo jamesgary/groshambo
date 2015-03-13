@@ -1,4 +1,3 @@
-// how to ban: c.write(websocket.CloseMessage, []byte{})
 package main
 
 import (
