@@ -3,7 +3,7 @@ var gutil      = require('gulp-util');
 var sass       = require('gulp-sass');
 var browserify = require('gulp-browserify');
 var babelify   = require('babelify');
-var connect = require('gulp-connect');
+var connect    = require('gulp-connect');
 
 gulp.task('js', function () {
   return gulp.src("js/main.js")
@@ -28,19 +28,3 @@ gulp.task('default', function() {
     port: 8001
   });
 });
-
-//gulp.task('default', function () {
-//  //return gulp.src('scss/*.scss')
-//  //  .pipe(watch('scss/*.scss'))
-//  //  .pipe(plumber())
-//  //  .pipe(sass())
-//  //  .pipe(gulp.dest('dist'));
-//  return gulp.src('husk.js')
-//    .pipe(watch('*.js'))
-//    .pipe(plumber())
-//    .pipe(browserify({
-//      insertGlobals : true,
-//      debug : true
-//    }))
-//    .pipe(gulp.dest('./dist'))
-//});
