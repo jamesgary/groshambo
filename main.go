@@ -65,6 +65,7 @@ func main() {
 			name, err := namer.Get(nameId)
 			if err != nil {
 				conn.DisconnectChan <- errors.New("Bad name id!")
+				// don't make new player!
 			}
 			player := NewPlayer(name)
 			world.AddPlayer(player)
