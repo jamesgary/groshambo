@@ -110,6 +110,7 @@ func (p *Player) canEat(p2 *Player) bool {
 }
 
 func (p *Player) Eat(p2 *Player) {
+	p.Radius *= 2
 	p2.Alive = false
 	p.Points++
 }
