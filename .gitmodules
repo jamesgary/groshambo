@@ -1,0 +1,3 @@
+[submodule "client/vendor/pixi.js"]
+	path = client/vendor/pixi.js
+	url = git@github.com:GoodBoyDigital/pixi.js.git
