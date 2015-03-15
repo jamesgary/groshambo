@@ -1,9 +1,10 @@
 require("../node_modules/babelify/node_modules/babel-core/browser-polyfill.js"); // :-\
 
 let Player = require("./player.js");
-let Renderer = require("./renderer.js");
+let Renderer = require("./canvas_renderer.js");
 let Welcome = require("./welcome.js");
 let Input = require("./input.js");
+let World = require("./world.js");
 
 let HOST = window.location.hostname + ":8080";
 let movementInput = {
@@ -13,11 +14,8 @@ let movementInput = {
   going_left: false,
   going_right: false
 };
-let world = {
-  updatedAt: Date.now(),
-  players: {}
-};
-let conn, renderer, currentPlayerName;
+
+let conn, renderer, currentPlayerName, world;
 
 $(function() {
   renderer = new Renderer(
@@ -39,12 +37,7 @@ function startGame(name, nameId) {
 
     // TODO better msg type detection
     if (msg.friction) { // must be a rules update, i.e. a new game
-      world.rules = {
-        friction: msg.friction,
-        acceleration: msg.acceleration,
-        map_width: msg.map_width,
-        map_height: msg.map_height
-      }
+      world = new World(msg);
 
       $("[role=game-container]").show();
       renderer.start(world, currentPlayerName);
@@ -54,7 +47,7 @@ function startGame(name, nameId) {
       });
     }
 
-    if (msg.players) { // must be a gamestate update
+    if (world && msg.players) { // must be a gamestate update
       let shouldUpdateLeaderboard;
       world.updatedAt = Date.now();
       for (let name in msg.players) {

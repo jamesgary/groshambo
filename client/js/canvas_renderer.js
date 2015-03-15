@@ -9,7 +9,7 @@ var MINIMAP_PADDING = 10;
 var MINIMAP_WIDTH = 200;
 var MINIMAP_HEIGHT = 150;
 
-module.exports = class Renderer {
+module.exports = class CanvasRenderer {
   constructor(canvas, leaderboard) {
     this.canvas = canvas;
     this.leaderboard = leaderboard;
@@ -54,8 +54,6 @@ module.exports = class Renderer {
   start(world, currentPlayerName) {
     this.world = world;
     this.currentPlayerName = currentPlayerName;
-    console.log(this.world.rules)
-
     this.ctx.font = "800 9pt Arial";
     this.ctx.textAlign = "center";
     this.render();
@@ -92,8 +90,8 @@ module.exports = class Renderer {
         cameraY = currentPlayer.y;
       } else {
         // place camera in center of map
-        cameraX = this.world.rules.map_width / 2;
-        cameraY = this.world.rules.map_height / 2;
+        cameraX = this.world.map_width / 2;
+        cameraY = this.world.map_height / 2;
       }
 
       bgX = cameraX % bgWidth;
@@ -119,7 +117,7 @@ module.exports = class Renderer {
         this.drawPlayer(currentPlayer, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
       }
       this.renderMinimap(cameraX, cameraY);
-      this.deadReckon()
+      this.world.deadReckon()
     }
 
     requestAnimationFrame(() => this.render());
@@ -132,14 +130,14 @@ module.exports = class Renderer {
       MINIMAP_PADDING,
       (CANVAS_HEIGHT - MINIMAP_PADDING) - MINIMAP_HEIGHT
     );
-    let minimapScale = (MINIMAP_WIDTH / this.world.rules.map_width)
+    let minimapScale = (MINIMAP_WIDTH / this.world.map_width)
     this.ctx.scale(minimapScale, minimapScale);
 
     this.ctx.fillStyle = "#321";
     this.ctx.fillRect(
       0, 0,
-      this.world.rules.map_width,
-      this.world.rules.map_height
+      this.world.map_width,
+      this.world.map_height
     );
 
     let playerMagnification = 2;
@@ -204,45 +202,5 @@ module.exports = class Renderer {
     this.ctx.strokeText(name, nameX, nameY);
     this.ctx.fillStyle = "#000";
     this.ctx.fillText(name, nameX, nameY);
-  }
-
-  deadReckon() {
-    //this.world.rules = {friction: 0.999, acceleration: 0.0000000001};
-
-    if (this.world.rules.friction && this.world.rules.acceleration) {
-      let now = Date.now();
-      let t = now - this.world.updatedAt;
-      let a = this.world.rules.acceleration;
-      let friction = this.world.rules.friction;
-
-      for (let name in this.world.players) {
-        let player = this.world.players[name];
-        if (player.alive) {
-          player.dr = true; // for debugging dead reckoning
-          let x_a = 0;
-          let y_a = 0;
-          if (player.going_up)    { y_a = -a }
-          if (player.going_down)  { y_a =  a }
-          if (player.going_left)  { x_a = -a }
-          if (player.going_right) { x_a =  a }
-
-          // may not be correct algorithm
-          x_a -= friction * player.x_speed
-          y_a -= friction * player.y_speed
-
-          player.x += (player.x_speed * t) + (0.5 * x_a * t * t)
-          player.y += (player.y_speed * t) + (0.5 * y_a * t * t)
-          player.x_speed += (x_a * t)
-          player.y_speed += (y_a * t)
-
-          // wrap!
-          if (player.x < 0) { player.x += this.world.rules.map_width }
-          if (player.x > this.world.rules.map_width) { player.x -= this.world.rules.map_width }
-          if (player.y < 0) { player.y += this.world.rules.map_height }
-          if (player.y > this.world.rules.map_height) { player.y -= this.world.rules.map_height }
-        }
-      }
-      this.world.updatedAt = now;
-    }
   }
 };
