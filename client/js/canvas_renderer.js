@@ -10,10 +10,11 @@ var MINIMAP_WIDTH = 200;
 var MINIMAP_HEIGHT = 150;
 
 module.exports = class CanvasRenderer {
-  constructor(canvas, leaderboard) {
-    this.canvas = canvas;
+  constructor($container, leaderboard) {
+    let $canvas = $('<canvas></canvas>');
+    $container.prepend($canvas);
     this.leaderboard = leaderboard;
-    this.ctx = this.canvas.getContext("2d");
+    this.ctx = $canvas[0].getContext("2d");
     this.images = {};
     this.patterns = {};
 
@@ -24,8 +25,8 @@ module.exports = class CanvasRenderer {
       sandBg: '/images/sand_bg.png'
     });
 
-    $(this.canvas).attr('width', CANVAS_WIDTH);
-    $(this.canvas).attr('height', CANVAS_HEIGHT);
+    $canvas.attr('width', CANVAS_WIDTH);
+    $canvas.attr('height', CANVAS_HEIGHT);
     $(this.leaderboard).css("height", `${CANVAS_HEIGHT}px`);
   }
 

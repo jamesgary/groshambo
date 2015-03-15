@@ -17,12 +17,13 @@ var MINIMAP_WIDTH = 200;
 var MINIMAP_HEIGHT = 150;
 
 module.exports = (function () {
-  function CanvasRenderer(canvas, leaderboard) {
+  function CanvasRenderer($container, leaderboard) {
     _classCallCheck(this, CanvasRenderer);
 
-    this.canvas = canvas;
+    var $canvas = $("<canvas></canvas>");
+    $container.prepend($canvas);
     this.leaderboard = leaderboard;
-    this.ctx = this.canvas.getContext("2d");
+    this.ctx = $canvas[0].getContext("2d");
     this.images = {};
     this.patterns = {};
 
@@ -33,8 +34,8 @@ module.exports = (function () {
       sandBg: "/images/sand_bg.png"
     });
 
-    $(this.canvas).attr("width", CANVAS_WIDTH);
-    $(this.canvas).attr("height", CANVAS_HEIGHT);
+    $canvas.attr("width", CANVAS_WIDTH);
+    $canvas.attr("height", CANVAS_HEIGHT);
     $(this.leaderboard).css("height", "" + CANVAS_HEIGHT + "px");
   }
 
@@ -289,7 +290,7 @@ var conn = undefined,
     world = undefined;
 
 $(function () {
-  renderer = new Renderer($("canvas[role=renderer]")[0], $("[role=leaderboard]"));
+  renderer = new Renderer($("[role=canvas-container]"), $("[role=leaderboard]"));
   Welcome.generateNamePicker(HOST, startGame);
 });
 

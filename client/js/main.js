@@ -19,7 +19,7 @@ let conn, renderer, currentPlayerName, world;
 
 $(function() {
   renderer = new Renderer(
-    $("canvas[role=renderer]")[0],
+    $("[role=canvas-container]"),
     $("[role=leaderboard]")
   );
   Welcome.generateNamePicker(HOST, startGame);
