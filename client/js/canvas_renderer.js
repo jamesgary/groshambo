@@ -10,10 +10,10 @@ var MINIMAP_WIDTH = 200;
 var MINIMAP_HEIGHT = 150;
 
 module.exports = class CanvasRenderer {
-  constructor($container, leaderboard) {
+  constructor($container, $leaderboard) {
     let $canvas = $('<canvas></canvas>');
     $container.prepend($canvas);
-    this.leaderboard = leaderboard;
+    this.$leaderboard = $leaderboard;
     this.ctx = $canvas[0].getContext("2d");
     this.images = {};
     this.patterns = {};
@@ -27,7 +27,7 @@ module.exports = class CanvasRenderer {
 
     $canvas.attr('width', CANVAS_WIDTH);
     $canvas.attr('height', CANVAS_HEIGHT);
-    $(this.leaderboard).css("height", `${CANVAS_HEIGHT}px`);
+    $(this.$leaderboard).css("height", `${CANVAS_HEIGHT}px`);
   }
 
   loadImages(sources) {
@@ -77,7 +77,7 @@ module.exports = class CanvasRenderer {
       html += `<span class="score">${player.points}</span>`;
       html += `</div>`;
     }
-    this.leaderboard.find("[role=leaderboard-players]").html(html);
+    this.$leaderboard.find("[role=leaderboard-players]").html(html);
   }
 
   render() {
