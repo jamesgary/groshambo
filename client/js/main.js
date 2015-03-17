@@ -1,7 +1,7 @@
 require("../node_modules/babelify/node_modules/babel-core/browser-polyfill.js"); // :-\
 
 let Player = require("./player.js");
-let Renderer = require("./canvas_renderer.js");
+let Renderer = require("./pixi_renderer.js");
 let Welcome = require("./welcome.js");
 let Input = require("./input.js");
 let World = require("./world.js");
@@ -70,7 +70,7 @@ function startGame(name, nameId) {
         }
       }
       // refresh all players
-      world.players = msg.players;
+      world.refreshPlayers(msg.players);
       if (shouldUpdateLeaderboard) {
         renderer.updateLeaderboard();
       }

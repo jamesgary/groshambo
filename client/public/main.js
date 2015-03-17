@@ -1,276 +1,10 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
 
-var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var water = "rgba(10, 100, 255, 1.0)";
-var land = "rgba(253, 236, 144, 1)";
-var landcast = "rgba(253, 236, 144, 0.9)";
-
-var CANVAS_WIDTH = 800;
-var CANVAS_HEIGHT = 600;
-
-var MINIMAP_PADDING = 10;
-var MINIMAP_WIDTH = 200;
-var MINIMAP_HEIGHT = 150;
-
-module.exports = (function () {
-  function CanvasRenderer($container, leaderboard) {
-    _classCallCheck(this, CanvasRenderer);
-
-    var $canvas = $("<canvas></canvas>");
-    $container.prepend($canvas);
-    this.leaderboard = leaderboard;
-    this.ctx = $canvas[0].getContext("2d");
-    this.images = {};
-    this.patterns = {};
-
-    this.imagesLoaded = false;
-    this.loadImages({
-      // note: dimensions be common denominators of canvas height/width
-      // and map height/width in order for wrapping to work
-      sandBg: "/images/sand_bg.png"
-    });
-
-    $canvas.attr("width", CANVAS_WIDTH);
-    $canvas.attr("height", CANVAS_HEIGHT);
-    $(this.leaderboard).css("height", "" + CANVAS_HEIGHT + "px");
-  }
-
-  _prototypeProperties(CanvasRenderer, null, {
-    loadImages: {
-      value: function loadImages(sources) {
-        var _this = this;
-
-        var loadedImages = 0;
-        var numImages = Object.keys(sources).length;
-
-        for (var name in sources) {
-          (function (name) {
-            _this.images[name] = new Image();
-            _this.images[name].onload = function () {
-              _this.patterns[name] = {
-                pattern: _this.ctx.createPattern(_this.images[name], "repeat"),
-                width: _this.images[name].width,
-                height: _this.images[name].height
-              };
-              loadedImages++;
-              if (loadedImages == numImages) {
-                // we're done loading!
-                _this.imagesLoaded = true;
-              }
-            };
-            _this.images[name].src = sources[name];
-          })(name);
-        }
-      },
-      writable: true,
-      configurable: true
-    },
-    start: {
-      value: function start(world, currentPlayerName) {
-        this.world = world;
-        this.currentPlayerName = currentPlayerName;
-        this.ctx.font = "800 9pt Arial";
-        this.ctx.textAlign = "center";
-        this.render();
-      },
-      writable: true,
-      configurable: true
-    },
-    updateLeaderboard: {
-      value: function updateLeaderboard() {
-        var html = "";
-        var sortedPlayers = [];
-        for (var _name in this.world.players) {
-          var player = this.world.players[_name];
-          sortedPlayers.push(player);
-        }
-
-        // sort descending
-        sortedPlayers.sort(function (a, b) {
-          return b.points - a.points;
-        });
-
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = sortedPlayers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var player = _step.value;
-
-            html += "<div class=\"player-score-container\">";
-            html += "<span class=\"player\">" + player.name + "</span>";
-            html += "<span class=\"score\">" + player.points + "</span>";
-            html += "</div>";
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator["return"]) {
-              _iterator["return"]();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-
-        this.leaderboard.find("[role=leaderboard-players]").html(html);
-      },
-      writable: true,
-      configurable: true
-    },
-    render: {
-      value: function render() {
-        var _this = this;
-
-        if (this.imagesLoaded) {
-          var bgWidth = this.patterns.sandBg.width;
-          var bgHeight = this.patterns.sandBg.height;
-          var currentPlayer = this.world.players[this.currentPlayerName];
-          var cameraX = undefined,
-              cameraY = undefined,
-              bgX = undefined,
-              bgY = undefined;
-          if (currentPlayer) {
-            cameraX = currentPlayer.x;
-            cameraY = currentPlayer.y;
-          } else {
-            // place camera in center of map
-            cameraX = this.world.map_width / 2;
-            cameraY = this.world.map_height / 2;
-          }
-
-          bgX = cameraX % bgWidth;
-          bgY = cameraY % bgHeight;
-          this.ctx.fillStyle = this.patterns.sandBg.pattern;
-          this.ctx.translate(-bgX, -bgY);
-          this.ctx.fillRect(0, 0, CANVAS_WIDTH * 2, CANVAS_HEIGHT * 2);
-          this.ctx.translate(bgX, bgY);
-
-          for (var _name in this.world.players) {
-            var player = this.world.players[_name];
-            if (player.alive && player != currentPlayer) {
-              // TODO check if player is visible in map, don't bother if not
-              var xDelta = player.x - currentPlayer.x;
-              var yDelta = player.y - currentPlayer.y;
-
-              var x = xDelta + CANVAS_WIDTH / 2;
-              var y = yDelta + CANVAS_HEIGHT / 2;
-              this.drawPlayer(player, x, y);
-            }
-          }
-          if (currentPlayer && currentPlayer.alive) {
-            this.drawPlayer(currentPlayer, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-          }
-          this.renderMinimap(cameraX, cameraY);
-          this.world.deadReckon();
-        }
-
-        requestAnimationFrame(function () {
-          return _this.render();
-        });
-      },
-      writable: true,
-      configurable: true
-    },
-    renderMinimap: {
-      value: function renderMinimap(viewportX, viewportY) {
-        // scale to minimap position/size
-        this.ctx.save();
-        this.ctx.translate(MINIMAP_PADDING, CANVAS_HEIGHT - MINIMAP_PADDING - MINIMAP_HEIGHT);
-        var minimapScale = MINIMAP_WIDTH / this.world.map_width;
-        this.ctx.scale(minimapScale, minimapScale);
-
-        this.ctx.fillStyle = "#321";
-        this.ctx.fillRect(0, 0, this.world.map_width, this.world.map_height);
-
-        var playerMagnification = 2;
-
-        var currentPlayer = this.world.players[this.currentPlayerName];
-
-        for (var _name in this.world.players) {
-          var player = this.world.players[_name];
-          if (player.alive) {
-            switch (player.element) {
-              case "water":
-                this.ctx.fillStyle = "#cff";break;
-              case "flame":
-                this.ctx.fillStyle = "#f9b422";break;
-              case "earth":
-                this.ctx.fillStyle = "#37e408";break;
-            }
-            this.ctx.beginPath();
-            this.ctx.arc(player.x, player.y, player.radius * playerMagnification, 0, 2 * Math.PI, false);
-            this.ctx.fill();
-          }
-        }
-
-        // show camera outline
-        this.ctx.strokeStyle = "#fff";
-        this.ctx.lineWidth = 16;
-        this.ctx.strokeRect(viewportX - CANVAS_WIDTH / 2, viewportY - CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        this.ctx.restore();
-      },
-      writable: true,
-      configurable: true
-    },
-    drawPlayer: {
-      value: function drawPlayer(player, x, y) {
-        switch (player.element) {
-          case "water":
-            this.ctx.fillStyle = "#cff";
-            this.ctx.strokeStyle = "#5ac";
-            this.ctx.lineWidth = 1;
-            break;
-          case "flame":
-            this.ctx.fillStyle = "#E9F422";
-            this.ctx.strokeStyle = "#AB0505";
-            this.ctx.lineWidth = 1;
-            break;
-          case "earth":
-            this.ctx.fillStyle = "#37e408";
-            this.ctx.strokeStyle = "#91770e";
-            this.ctx.lineWidth = 2;
-            break;
-        }
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, player.radius, 0, 2 * Math.PI, false);
-        this.ctx.fill();
-        this.ctx.stroke();
-
-        var name = player.name;
-        var nameX = x;
-        var nameY = y + 25;
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeStyle = "#fff";
-        this.ctx.strokeText(name, nameX, nameY);
-        this.ctx.fillStyle = "#000";
-        this.ctx.fillText(name, nameX, nameY);
-      },
-      writable: true,
-      configurable: true
-    }
-  });
-
-  return CanvasRenderer;
-})();
-
-},{}],2:[function(require,module,exports){
-"use strict";
-
 require("../node_modules/babelify/node_modules/babel-core/browser-polyfill.js"); // :-\
 
 var Player = require("./player.js");
-var Renderer = require("./canvas_renderer.js");
+var Renderer = require("./pixi_renderer.js");
 var Welcome = require("./welcome.js");
 var Input = require("./input.js");
 var World = require("./world.js");
@@ -341,7 +75,7 @@ function startGame(name, nameId) {
         }
       }
       // refresh all players
-      world.players = msg.players;
+      world.refreshPlayers(msg.players);
       if (shouldUpdateLeaderboard) {
         renderer.updateLeaderboard();
       }
@@ -391,7 +125,7 @@ function pickElement(element) {
   conn.send(JSON.stringify({ type: "element", element: element }));
 }
 
-},{"../node_modules/babelify/node_modules/babel-core/browser-polyfill.js":7,"./canvas_renderer.js":1,"./input.js":3,"./player.js":4,"./welcome.js":5,"./world.js":6}],3:[function(require,module,exports){
+},{"../node_modules/babelify/node_modules/babel-core/browser-polyfill.js":7,"./input.js":2,"./pixi_renderer.js":3,"./player.js":4,"./welcome.js":5,"./world.js":6}],2:[function(require,module,exports){
 "use strict";
 
 module.exports = {
@@ -466,6 +200,143 @@ module.exports = {
   }
 };
 
+},{}],3:[function(require,module,exports){
+"use strict";
+
+var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var water = "rgba(10, 100, 255, 1.0)";
+var land = "rgba(253, 236, 144, 1)";
+var landcast = "rgba(253, 236, 144, 0.9)";
+
+var CANVAS_WIDTH = 800;
+var CANVAS_HEIGHT = 600;
+
+var MINIMAP_PADDING = 10;
+var MINIMAP_WIDTH = 200;
+var MINIMAP_HEIGHT = 150;
+
+module.exports = (function () {
+  function PixiRenderer($container, $leaderboard) {
+    _classCallCheck(this, PixiRenderer);
+
+    this.stats = new Stats();
+    this.stats.setMode(0); // 0: fps, 1: ms
+
+    // align top-left
+    this.stats.domElement.style.position = "absolute";
+    this.stats.domElement.style.left = "0";
+    this.stats.domElement.style.top = "0";
+    document.body.appendChild(this.stats.domElement);
+
+    this.renderer = new PIXI.autoDetectRenderer(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    $container.prepend(this.renderer.view);
+
+    this.stage = new PIXI.Stage();
+
+    var sandTexture = PIXI.Texture.fromImage("/images/sand_bg.png");
+    this.sandBg = new PIXI.TilingSprite(sandTexture, CANVAS_WIDTH, CANVAS_HEIGHT);
+    this.sandBg.position.x = 0;
+    this.sandBg.position.y = 0;
+
+    this.stage.addChild(this.sandBg);
+
+    this.$leaderboard = $leaderboard;
+    $(this.$leaderboard).css("height", "" + CANVAS_HEIGHT + "px");
+  }
+
+  _prototypeProperties(PixiRenderer, null, {
+    start: {
+      value: function start(world, currentPlayerName) {
+        this.world = world;
+        this.currentPlayerName = currentPlayerName;
+
+        this.animate();
+      },
+      writable: true,
+      configurable: true
+    },
+    animate: {
+      value: function animate() {
+        var _this = this;
+
+        this.stats.begin();
+        var currentPlayer = this.world.players[this.currentPlayerName];
+        if (currentPlayer) {
+          this.sandBg.tilePosition.x = -currentPlayer.x;
+          this.sandBg.tilePosition.y = -currentPlayer.y;
+        } else {
+          // place camera in center of map
+          this.sandBg.tilePosition.x = this.world.map_width / 2;
+          this.sandBg.tilePosition.y = this.world.map_height / 2;
+        }
+
+        this.renderer.render(this.stage);
+
+        requestAnimationFrame(function () {
+          return _this.animate();
+        });
+        this.world.deadReckon();
+        this.stats.end();
+      },
+      writable: true,
+      configurable: true
+    },
+    updateLeaderboard: {
+      value: function updateLeaderboard() {
+        var html = "";
+        var sortedPlayers = [];
+        for (var _name in this.world.players) {
+          var player = this.world.players[_name];
+          sortedPlayers.push(player);
+        }
+
+        // sort descending
+        sortedPlayers.sort(function (a, b) {
+          return b.points - a.points;
+        });
+
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = sortedPlayers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var player = _step.value;
+
+            html += "<div class=\"player-score-container\">";
+            html += "<span class=\"player\">" + player.name + "</span>";
+            html += "<span class=\"score\">" + player.points + "</span>";
+            html += "</div>";
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator["return"]) {
+              _iterator["return"]();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
+        this.$leaderboard.find("[role=leaderboard-players]").html(html);
+      },
+      writable: true,
+      configurable: true
+    }
+  });
+
+  return PixiRenderer;
+})();
+
 },{}],4:[function(require,module,exports){
 "use strict";
 
@@ -525,6 +396,35 @@ module.exports = (function () {
   }
 
   _prototypeProperties(World, null, {
+    refreshPlayers: {
+      value: function refreshPlayers(newPlayers) {
+        for (var _name in newPlayers) {
+          var newPlayer = newPlayers[_name];
+          if (this.players[newPlayer.name]) {
+            var oldPlayer = this.players[newPlayer.name];
+            oldPlayer.element = newPlayer.element;
+            oldPlayer.alive = newPlayer.alive;
+            oldPlayer.points = newPlayer.points;
+            oldPlayer.radius = newPlayer.radius;
+
+            oldPlayer.x = newPlayer.x;
+            oldPlayer.y = newPlayer.y;
+
+            oldPlayer.x_speed = newPlayer.x_speed;
+            oldPlayer.y_speed = newPlayer.y_speed;
+
+            oldPlayer.going_up = newPlayer.going_up;
+            oldPlayer.going_down = newPlayer.going_down;
+            oldPlayer.going_left = newPlayer.going_left;
+            oldPlayer.going_right = newPlayer.going_right;
+          } else {
+            this.players[newPlayer.name] = newPlayer;
+          }
+        }
+      },
+      writable: true,
+      configurable: true
+    },
     deadReckon: {
       value: function deadReckon() {
         var now = Date.now();
@@ -3110,4 +3010,4 @@ $define(GLOBAL + BIND, {
 );
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[2])
+},{}]},{},[1])
