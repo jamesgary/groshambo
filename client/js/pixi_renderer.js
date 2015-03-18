@@ -40,24 +40,17 @@ module.exports = class PixiRenderer {
     this.spriteContainer = new PIXI.SpriteBatch();
     this.stage.addChild(this.spriteContainer);
 
-    //let minimapMask = new PIXI.Graphics();
-    //minimapMask.beginFill();
-    //minimapMask.drawCircle(0, 0, 2000);
-    //minimapMask.endFill();
-    //this.stage.addChild(minimapMask);
-
     this.minimap = new PIXI.Graphics();
-    window.minimap = this.minimap;
 
-    this.minimapMask = new PIXI.Graphics();
-    this.minimapMask.position.x = MINIMAP_PADDING;
-    this.minimapMask.position.y = (CANVAS_HEIGHT - MINIMAP_PADDING) - MINIMAP_HEIGHT;
-    this.minimapMask.beginFill(0x00ff00, 1);
-    this.minimapMask.drawRect(0, 0, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-    this.minimap.mask = this.minimapMask;
+    let minimapMask = new PIXI.Graphics();
+    minimapMask.position.x = MINIMAP_PADDING;
+    minimapMask.position.y = (CANVAS_HEIGHT - MINIMAP_PADDING) - MINIMAP_HEIGHT;
+    minimapMask.beginFill(0x000000, 1);
+    minimapMask.drawRect(0, 0, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    this.minimap.mask = minimapMask;
 
     this.stage.addChild(this.minimap);
-    this.stage.addChild(this.minimapMask);
+    this.stage.addChild(minimapMask);
 
     this.$leaderboard = $leaderboard;
     $(this.$leaderboard).css("height", `${CANVAS_HEIGHT}px`);
