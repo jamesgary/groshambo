@@ -20,7 +20,6 @@ Play on localhost:8001.
 ## Todo
 
 - Add computer AIs for when there's few players
-- Get more powerful when you eat other players
 - Map features, such as walls
 - If this world is persistent...
   - One beautiful map
