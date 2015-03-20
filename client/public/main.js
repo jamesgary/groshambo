@@ -76,6 +76,13 @@ function startGame(name, nameId) {
           renderer.addPlayer(serverPlayer);
         }
       }
+      for (var _name2 in world.players) {
+        if (!msg.players[_name2]) {
+          // player doesn't exist anymore!
+          renderer.removePlayer(_name2);
+          shouldUpdateLeaderboard = true;
+        }
+      }
       // refresh all players
       world.refreshPlayers(msg.players);
       if (shouldUpdateLeaderboard) {
@@ -326,9 +333,9 @@ module.exports = (function () {
       configurable: true
     },
     removePlayer: {
-      value: function removePlayer(player) {
+      value: function removePlayer(playerName) {
         // poof?
-        delete this.players[player.name];
+        delete this.players[playerName];
       },
       writable: true,
       configurable: true

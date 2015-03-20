@@ -71,6 +71,12 @@ function startGame(name, nameId) {
           renderer.addPlayer(serverPlayer);
         }
       }
+      for (let name in world.players) {
+        if (!msg.players[name]) { // player doesn't exist anymore!
+          renderer.removePlayer(name);
+          shouldUpdateLeaderboard = true;
+        }
+      }
       // refresh all players
       world.refreshPlayers(msg.players);
       if (shouldUpdateLeaderboard) {

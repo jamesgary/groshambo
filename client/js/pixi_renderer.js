@@ -106,9 +106,9 @@ module.exports = class PixiRenderer {
     p.going_right = player.going_right;
   }
 
-  removePlayer(player) {
+  removePlayer(playerName) {
     // poof?
-    delete this.players[player.name];
+    delete this.players[playerName];
   }
 
   updateLeaderboard() {
