@@ -57,15 +57,82 @@ module.exports = class PixiRenderer {
   }
 
   start(world, currentPlayerName) {
-    this.world = world;
+    this.world = world; // only used to trigger deadReckon
     this.currentPlayerName = currentPlayerName;
 
     // cache for performance (and syntactic sugar)
     this.map_height = this.world.map_height;
     this.map_width = this.world.map_width;
 
+    this.players = {};
+
     this.animate();
   }
+
+  addPlayer(player) {
+    let sprite = this.createFireSprite();
+    sprite.anchor.x = 0.5;
+    sprite.anchor.y = 0.5;
+    this.spriteContainer.addChild(sprite);
+
+    this.players[player.name] = {
+      sprite:      sprite,
+      x:           player.x,
+      y:           player.y,
+      element:     player.element,
+      alive:       player.alive,
+      points:      player.points,
+      radius:      player.radius,
+      going_up:    player.going_up,
+      going_down:  player.going_down,
+      going_left:  player.going_left,
+      going_right: player.going_right
+    }
+    // then some special 'flash' to introduce player?
+    this.updateLeaderboard();
+  }
+
+  updatePlayer(player) {
+    let p = this.players[player.name];
+    p.x           = player.x;
+    p.y           = player.y;
+    p.element     = player.element;
+    p.alive       = player.alive;
+    p.points      = player.points;
+    p.radius      = player.radius;
+    p.going_up    = player.going_up;
+    p.going_down  = player.going_down;
+    p.going_left  = player.going_left;
+    p.going_right = player.going_right;
+  }
+
+  removePlayer(player) {
+    // poof?
+    delete this.players[player.name];
+  }
+
+  updateLeaderboard() {
+    let html = "";
+    let sortedPlayers = [];
+    for (let name in this.players) {
+      let player = this.players[name];
+      player.name = name;
+      sortedPlayers.push(player);
+    }
+
+    // sort descending
+    sortedPlayers.sort(function(a, b) { return b.points - a.points });
+
+    for (let player of sortedPlayers) {
+      html += `<div class="player-score-container">`;
+      html += `<span class="player">${player.name}</span>`;
+      html += `<span class="score">${player.points}</span>`;
+      html += `</div>`;
+    }
+    this.$leaderboard.find("[role=leaderboard-players]").html(html);
+  }
+
+  // private
 
   createFireSprite() {
     return new PIXI.Sprite.fromImage('/images/fire1_ 01.png');
@@ -73,7 +140,7 @@ module.exports = class PixiRenderer {
 
   animate() {
     this.stats.begin();
-    let currentPlayer = this.world.players[this.currentPlayerName];
+    let currentPlayer = this.players[this.currentPlayerName];
     let cameraX, cameraY;
 
     // paint background
@@ -89,36 +156,34 @@ module.exports = class PixiRenderer {
     this.sandBg.tilePosition.y = -cameraY;
 
     // paint players
-    for (let name in this.world.players) {
-      let player = this.world.players[name];
-      if (!player.sprite) {
-        // new player!
-        player.sprite = this.createFireSprite();
-        player.sprite.anchor.x = 0.5;
-        player.sprite.anchor.y = 0.5;
+    for (let name in this.players) {
+      let player = this.players[name];
+      if (player.sprite) {
+        if (player.alive) {
+          player.sprite.visible = true;
+          if (player == currentPlayer) {
+            player.sprite.x = CANVAS_WIDTH / 2;
+            player.sprite.y = CANVAS_HEIGHT / 2;
+          } else {
+            // TODO check if player is visible in map, don't bother if not
+            let xDelta = (player.x - currentPlayer.x);
+            let yDelta = (player.y - currentPlayer.y);
 
-        this.spriteContainer.addChild(player.sprite);
-      }
-      if (player.alive && player != currentPlayer) {
-        // TODO check if player is visible in map, don't bother if not
-        let xDelta = (player.x - currentPlayer.x);
-        let yDelta = (player.y - currentPlayer.y);
+            // flip it if it is more than halfway across map
+            if (xDelta > (this.map_width / 2)) { xDelta -= this.map_width }
+            if (xDelta < (this.map_width / -2)) { xDelta += this.map_width }
+            if (yDelta > (this.map_height / 2)) { yDelta -= this.map_height }
+            if (yDelta < (this.map_height / -2)) { yDelta += this.map_height }
 
-        // flip it if it is more than halfway across map
-        if (xDelta > (this.map_width / 2)) { xDelta -= this.map_width }
-        if (xDelta < (this.map_width / 2)) { xDelta += this.map_width }
-        if (yDelta > (this.map_height / 2)) { yDelta -= this.map_height }
-        if (yDelta < (this.map_height / 2)) { yDelta += this.map_height }
+            let x = (xDelta) + (CANVAS_WIDTH / 2);
+            let y = (yDelta) + (CANVAS_HEIGHT / 2);
 
-        let x = (xDelta) + (CANVAS_WIDTH / 2);
-        let y = (yDelta) + (CANVAS_HEIGHT / 2);
-
-        player.sprite.x = x;
-        player.sprite.y = y;
-      }
-      if (currentPlayer && currentPlayer.alive) {
-        player.sprite.x = CANVAS_WIDTH / 2;
-        player.sprite.y = CANVAS_HEIGHT / 2;
+            player.sprite.x = x;
+            player.sprite.y = y;
+          }
+        } else {
+          player.sprite.visible = false;
+        }
       }
     }
 
@@ -130,8 +195,8 @@ module.exports = class PixiRenderer {
     this.minimap.beginFill(0x123456, 1);
     this.minimap.drawRect(0, 0, this.map_width, this.map_height);
     // paint minimap players
-    for (let name in this.world.players) {
-      let player = this.world.players[name];
+    for (let name in this.players) {
+      let player = this.players[name];
       if (player.alive) {
         switch(player.element) {
           case 'water': this.minimap.beginFill(0xff0000, 1); break;
@@ -153,27 +218,15 @@ module.exports = class PixiRenderer {
     this.renderer.render(this.stage);
 
     requestAnimationFrame(() => this.animate());
-    this.world.deadReckon();
+    this.deadReckon();
     this.stats.end();
   }
 
-  updateLeaderboard() {
-    let html = "";
-    let sortedPlayers = [];
-    for (let name in this.world.players) {
-      let player = this.world.players[name];
-      sortedPlayers.push(player);
+  deadReckon() {
+    this.world.deadReckon();
+    for (let name in this.players) {
+      // assuming everyone changed
+      this.updatePlayer(this.world.players[name]);
     }
-
-    // sort descending
-    sortedPlayers.sort(function(a, b) { return b.points - a.points });
-
-    for (let player of sortedPlayers) {
-      html += `<div class="player-score-container">`;
-      html += `<span class="player">${player.name}</span>`;
-      html += `<span class="score">${player.points}</span>`;
-      html += `</div>`;
-    }
-    this.$leaderboard.find("[role=leaderboard-players]").html(html);
   }
 }

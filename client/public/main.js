@@ -62,6 +62,7 @@ function startGame(name, nameId) {
         var clientPlayer = world.players[_name];
         if (clientPlayer) {
           // check for changes in existing players
+          renderer.updatePlayer(serverPlayer);
           if (clientPlayer.points != serverPlayer.points) {
             shouldUpdateLeaderboard = true;
           }
@@ -72,6 +73,7 @@ function startGame(name, nameId) {
         } else {
           // new players should go on leaderboard
           shouldUpdateLeaderboard = true;
+          renderer.addPlayer(serverPlayer);
         }
       }
       // refresh all players
@@ -266,126 +268,67 @@ module.exports = (function () {
   _prototypeProperties(PixiRenderer, null, {
     start: {
       value: function start(world, currentPlayerName) {
-        this.world = world;
+        this.world = world; // only used to trigger deadReckon
         this.currentPlayerName = currentPlayerName;
 
         // cache for performance (and syntactic sugar)
         this.map_height = this.world.map_height;
         this.map_width = this.world.map_width;
 
+        this.players = {};
+
         this.animate();
       },
       writable: true,
       configurable: true
     },
-    createFireSprite: {
-      value: function createFireSprite() {
-        return new PIXI.Sprite.fromImage("/images/fire1_ 01.png");
+    addPlayer: {
+      value: function addPlayer(player) {
+        var sprite = this.createFireSprite();
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 0.5;
+        this.spriteContainer.addChild(sprite);
+
+        this.players[player.name] = {
+          sprite: sprite,
+          x: player.x,
+          y: player.y,
+          element: player.element,
+          alive: player.alive,
+          points: player.points,
+          radius: player.radius,
+          going_up: player.going_up,
+          going_down: player.going_down,
+          going_left: player.going_left,
+          going_right: player.going_right
+        };
+        // then some special 'flash' to introduce player?
+        this.updateLeaderboard();
       },
       writable: true,
       configurable: true
     },
-    animate: {
-      value: function animate() {
-        var _this = this;
-
-        this.stats.begin();
-        var currentPlayer = this.world.players[this.currentPlayerName];
-        var cameraX = undefined,
-            cameraY = undefined;
-
-        // paint background
-        if (currentPlayer) {
-          cameraX = currentPlayer.x;
-          cameraY = currentPlayer.y;
-        } else {
-          // place camera in center of map
-          cameraX = -this.map_width / 2;
-          cameraY = -this.map_height / 2;
-        }
-        this.sandBg.tilePosition.x = -cameraX;
-        this.sandBg.tilePosition.y = -cameraY;
-
-        // paint players
-        for (var _name in this.world.players) {
-          var player = this.world.players[_name];
-          if (!player.sprite) {
-            // new player!
-            player.sprite = this.createFireSprite();
-            player.sprite.anchor.x = 0.5;
-            player.sprite.anchor.y = 0.5;
-
-            this.spriteContainer.addChild(player.sprite);
-          }
-          if (player.alive && player != currentPlayer) {
-            // TODO check if player is visible in map, don't bother if not
-            var xDelta = player.x - currentPlayer.x;
-            var yDelta = player.y - currentPlayer.y;
-
-            // flip it if it is more than halfway across map
-            if (xDelta > this.map_width / 2) {
-              xDelta -= this.map_width;
-            }
-            if (xDelta < this.map_width / 2) {
-              xDelta += this.map_width;
-            }
-            if (yDelta > this.map_height / 2) {
-              yDelta -= this.map_height;
-            }
-            if (yDelta < this.map_height / 2) {
-              yDelta += this.map_height;
-            }
-
-            var x = xDelta + CANVAS_WIDTH / 2;
-            var y = yDelta + CANVAS_HEIGHT / 2;
-
-            player.sprite.x = x;
-            player.sprite.y = y;
-          }
-          if (currentPlayer && currentPlayer.alive) {
-            player.sprite.x = CANVAS_WIDTH / 2;
-            player.sprite.y = CANVAS_HEIGHT / 2;
-          }
-        }
-
-        // paint minimap
-        this.minimap.clear();
-        this.minimap.scale.set(0.125);
-        this.minimap.position.x = MINIMAP_PADDING;
-        this.minimap.position.y = CANVAS_HEIGHT - MINIMAP_PADDING - MINIMAP_HEIGHT;
-        this.minimap.beginFill(1193046, 1);
-        this.minimap.drawRect(0, 0, this.map_width, this.map_height);
-        // paint minimap players
-        for (var _name2 in this.world.players) {
-          var player = this.world.players[_name2];
-          if (player.alive) {
-            switch (player.element) {
-              case "water":
-                this.minimap.beginFill(16711680, 1);break;
-              case "flame":
-                this.minimap.beginFill(16711680, 1);break;
-              case "earth":
-                this.minimap.beginFill(16711680, 1);break;
-            }
-            this.minimap.drawCircle(player.x, player.y, player.radius * PLAYER_MAGNIFICATION);
-          }
-        }
-        // paint minimap viewport rect thingy
-        this.minimap.lineStyle(8, 16777215);
-        this.minimap.beginFill(0, 0);
-        this.minimap.moveTo(cameraX - CANVAS_WIDTH / 2, cameraY - CANVAS_HEIGHT / 2);
-        this.minimap.lineTo(cameraX + CANVAS_WIDTH / 2, cameraY - CANVAS_HEIGHT / 2);
-        this.minimap.lineTo(cameraX + CANVAS_WIDTH / 2, cameraY + CANVAS_HEIGHT / 2);
-        this.minimap.lineTo(cameraX - CANVAS_WIDTH / 2, cameraY + CANVAS_HEIGHT / 2);
-        this.minimap.lineTo(cameraX - CANVAS_WIDTH / 2, cameraY - CANVAS_HEIGHT / 2);
-
-        this.renderer.render(this.stage);
-
-        requestAnimationFrame(function () {
-          return _this.animate();
-        });
-        this.world.deadReckon();
-        this.stats.end();
+    updatePlayer: {
+      value: function updatePlayer(player) {
+        var p = this.players[player.name];
+        p.x = player.x;
+        p.y = player.y;
+        p.element = player.element;
+        p.alive = player.alive;
+        p.points = player.points;
+        p.radius = player.radius;
+        p.going_up = player.going_up;
+        p.going_down = player.going_down;
+        p.going_left = player.going_left;
+        p.going_right = player.going_right;
+      },
+      writable: true,
+      configurable: true
+    },
+    removePlayer: {
+      value: function removePlayer(player) {
+        // poof?
+        delete this.players[player.name];
       },
       writable: true,
       configurable: true
@@ -394,8 +337,9 @@ module.exports = (function () {
       value: function updateLeaderboard() {
         var html = "";
         var sortedPlayers = [];
-        for (var _name in this.world.players) {
-          var player = this.world.players[_name];
+        for (var _name in this.players) {
+          var player = this.players[_name];
+          player.name = _name;
           sortedPlayers.push(player);
         }
 
@@ -433,6 +377,130 @@ module.exports = (function () {
         }
 
         this.$leaderboard.find("[role=leaderboard-players]").html(html);
+      },
+      writable: true,
+      configurable: true
+    },
+    createFireSprite: {
+
+      // private
+
+      value: function createFireSprite() {
+        return new PIXI.Sprite.fromImage("/images/fire1_ 01.png");
+      },
+      writable: true,
+      configurable: true
+    },
+    animate: {
+      value: function animate() {
+        var _this = this;
+
+        this.stats.begin();
+        var currentPlayer = this.players[this.currentPlayerName];
+        var cameraX = undefined,
+            cameraY = undefined;
+
+        // paint background
+        if (currentPlayer) {
+          cameraX = currentPlayer.x;
+          cameraY = currentPlayer.y;
+        } else {
+          // place camera in center of map
+          cameraX = -this.map_width / 2;
+          cameraY = -this.map_height / 2;
+        }
+        this.sandBg.tilePosition.x = -cameraX;
+        this.sandBg.tilePosition.y = -cameraY;
+
+        // paint players
+        for (var _name in this.players) {
+          var player = this.players[_name];
+          if (player.sprite) {
+            if (player.alive) {
+              player.sprite.visible = true;
+              if (player == currentPlayer) {
+                player.sprite.x = CANVAS_WIDTH / 2;
+                player.sprite.y = CANVAS_HEIGHT / 2;
+              } else {
+                // TODO check if player is visible in map, don't bother if not
+                var xDelta = player.x - currentPlayer.x;
+                var yDelta = player.y - currentPlayer.y;
+
+                // flip it if it is more than halfway across map
+                if (xDelta > this.map_width / 2) {
+                  xDelta -= this.map_width;
+                }
+                if (xDelta < this.map_width / -2) {
+                  xDelta += this.map_width;
+                }
+                if (yDelta > this.map_height / 2) {
+                  yDelta -= this.map_height;
+                }
+                if (yDelta < this.map_height / -2) {
+                  yDelta += this.map_height;
+                }
+
+                var x = xDelta + CANVAS_WIDTH / 2;
+                var y = yDelta + CANVAS_HEIGHT / 2;
+
+                player.sprite.x = x;
+                player.sprite.y = y;
+              }
+            } else {
+              player.sprite.visible = false;
+            }
+          }
+        }
+
+        // paint minimap
+        this.minimap.clear();
+        this.minimap.scale.set(0.125);
+        this.minimap.position.x = MINIMAP_PADDING;
+        this.minimap.position.y = CANVAS_HEIGHT - MINIMAP_PADDING - MINIMAP_HEIGHT;
+        this.minimap.beginFill(1193046, 1);
+        this.minimap.drawRect(0, 0, this.map_width, this.map_height);
+        // paint minimap players
+        for (var _name2 in this.players) {
+          var player = this.players[_name2];
+          if (player.alive) {
+            switch (player.element) {
+              case "water":
+                this.minimap.beginFill(16711680, 1);break;
+              case "flame":
+                this.minimap.beginFill(16711680, 1);break;
+              case "earth":
+                this.minimap.beginFill(16711680, 1);break;
+            }
+            this.minimap.drawCircle(player.x, player.y, player.radius * PLAYER_MAGNIFICATION);
+          }
+        }
+        // paint minimap viewport rect thingy
+        this.minimap.lineStyle(8, 16777215);
+        this.minimap.beginFill(0, 0);
+        this.minimap.moveTo(cameraX - CANVAS_WIDTH / 2, cameraY - CANVAS_HEIGHT / 2);
+        this.minimap.lineTo(cameraX + CANVAS_WIDTH / 2, cameraY - CANVAS_HEIGHT / 2);
+        this.minimap.lineTo(cameraX + CANVAS_WIDTH / 2, cameraY + CANVAS_HEIGHT / 2);
+        this.minimap.lineTo(cameraX - CANVAS_WIDTH / 2, cameraY + CANVAS_HEIGHT / 2);
+        this.minimap.lineTo(cameraX - CANVAS_WIDTH / 2, cameraY - CANVAS_HEIGHT / 2);
+
+        this.renderer.render(this.stage);
+
+        requestAnimationFrame(function () {
+          return _this.animate();
+        });
+        this.deadReckon();
+        this.stats.end();
+      },
+      writable: true,
+      configurable: true
+    },
+    deadReckon: {
+      value: function deadReckon() {
+        this.world.deadReckon();
+        for (var _name in this.players) {
+          // assuming everyone changed
+          this.updatePlayer(this.world.players[_name]);
+        }
       },
       writable: true,
       configurable: true
@@ -503,29 +571,7 @@ module.exports = (function () {
   _prototypeProperties(World, null, {
     refreshPlayers: {
       value: function refreshPlayers(newPlayers) {
-        for (var _name in newPlayers) {
-          var newPlayer = newPlayers[_name];
-          if (this.players[newPlayer.name]) {
-            var oldPlayer = this.players[newPlayer.name];
-            oldPlayer.element = newPlayer.element;
-            oldPlayer.alive = newPlayer.alive;
-            oldPlayer.points = newPlayer.points;
-            oldPlayer.radius = newPlayer.radius;
-
-            oldPlayer.x = newPlayer.x;
-            oldPlayer.y = newPlayer.y;
-
-            oldPlayer.x_speed = newPlayer.x_speed;
-            oldPlayer.y_speed = newPlayer.y_speed;
-
-            oldPlayer.going_up = newPlayer.going_up;
-            oldPlayer.going_down = newPlayer.going_down;
-            oldPlayer.going_left = newPlayer.going_left;
-            oldPlayer.going_right = newPlayer.going_right;
-          } else {
-            this.players[newPlayer.name] = newPlayer;
-          }
-        }
+        this.players = newPlayers;
       },
       writable: true,
       configurable: true

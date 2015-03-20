@@ -107,7 +107,7 @@ h1 {
   font-size: 0;
   text-align: center;
   vertical-align: top; }
-  .game-container canvas {
+  .game-container .renderer {
     background: #000;
     display: inline-block;
     margin: 0; }

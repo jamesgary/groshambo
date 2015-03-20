@@ -9,29 +9,7 @@ module.exports = class World {
   }
 
   refreshPlayers(newPlayers) {
-    for (let name in newPlayers) {
-      let newPlayer = newPlayers[name];
-      if (this.players[newPlayer.name]) {
-        let oldPlayer = this.players[newPlayer.name];
-        oldPlayer.element = newPlayer.element
-        oldPlayer.alive = newPlayer.alive
-        oldPlayer.points = newPlayer.points
-        oldPlayer.radius = newPlayer.radius
-
-        oldPlayer.x = newPlayer.x
-        oldPlayer.y = newPlayer.y
-
-        oldPlayer.x_speed = newPlayer.x_speed
-        oldPlayer.y_speed = newPlayer.y_speed
-
-        oldPlayer.going_up = newPlayer.going_up
-        oldPlayer.going_down = newPlayer.going_down
-        oldPlayer.going_left = newPlayer.going_left
-        oldPlayer.going_right = newPlayer.going_right
-      } else {
-        this.players[newPlayer.name] = newPlayer;
-      }
-    }
+    this.players = newPlayers;
   }
 
   deadReckon() {

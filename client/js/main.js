@@ -55,6 +55,7 @@ function startGame(name, nameId) {
         let clientPlayer = world.players[name];
         if (clientPlayer) {
           // check for changes in existing players
+          renderer.updatePlayer(serverPlayer);
           if (clientPlayer.points != serverPlayer.points) {
             shouldUpdateLeaderboard = true;
           }
@@ -67,6 +68,7 @@ function startGame(name, nameId) {
         } else {
           // new players should go on leaderboard
           shouldUpdateLeaderboard = true;
+          renderer.addPlayer(serverPlayer);
         }
       }
       // refresh all players
